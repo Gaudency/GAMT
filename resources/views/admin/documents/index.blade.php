@@ -1,0 +1,1169 @@
+@extends('admin.master')
+
+@section('content')
+<div class="w-full pt-24 pb-6"> <!-- Aumentado el padding superior para evitar solapamiento -->
+    <div class="mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+            <div class="bg-gradient-to-r from-red-500 to-pink-600 dark:from-red-600 dark:to-pink-700 text-white p-4 flex flex-col md:flex-row justify-between items-center gap-4">
+                <h4 class="text-xl font-semibold flex items-center">
+                    <i class="fas fa-book-reader mr-2"></i> Lista de Préstamos
+                </h4>
+                <!-- Filtros mejorados para modo oscuro/claro -->
+                <div class="flex flex-wrap gap-2">
+                    <div class="flex">
+                        <input type="text" id="searchInput" class="w-full px-3 py-2 bg-white/20 border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50 rounded-l" placeholder="Buscar...">
+                        <button id="searchButton" class="px-3 py-2 bg-white/10 hover:bg-white/20 border border-white/30 border-l-0 rounded-r transition-colors duration-200 shine-button">
+                            <i class="fas fa-search"></i>
+                    </button>
+                    </div>
+
+                    <!-- Select de estado mejorado para modo oscuro/claro -->
+                    <div class="relative">
+                        <select id="statusFilter" class="px-3 py-2 bg-white/20 border border-white/30 text-white rounded focus:outline-none focus:ring-2 focus:ring-white/50 appearance-none pr-8">
+                            <option value="">Todos los estados</option>
+                            <option value="Prestado" class="bg-yellow-500 text-white dark:bg-yellow-600">Prestados</option>
+                            <option value="Devuelto" class="bg-green-500 text-white dark:bg-green-600">Devueltos</option>
+                            <option value="Pendiente" class="bg-blue-500 text-white dark:bg-blue-600">Pendientes</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-white">
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </div>
+                </div>
+
+                    <!-- Filtro de fechas -->
+                    <div class="flex">
+                        <span class="px-3 py-2 bg-white/10 border border-white/30 border-r-0 rounded-l flex items-center">
+                            <i class="fas fa-calendar"></i>
+                        </span>
+                        <input type="text" id="dateRangePicker" class="px-3 py-2 bg-white/20 border border-white/30 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50 rounded-r" placeholder="Rango de fechas">
+            </div>
+        </div>
+                </div>
+            <div class="p-6 dark:bg-gray-800">
+                <!-- Estadísticas -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="transform hover:-translate-y-1 transition-transform duration-300">
+                        <div class="bg-gradient-to-r from-blue-500 to-indigo-500 dark:from-blue-600 dark:to-indigo-600 text-white rounded-lg shadow-md flex items-center p-5 shine-button">
+                            <i class="fas fa-book-reader text-4xl mr-5 opacity-80"></i>
+                            <div>
+                                <h2 class="text-3xl font-bold">{{ $documents->count() }}</h2>
+                                <p class="opacity-80">Préstamos visibles en esta pagina</p>
+            </div>
+                                </div>
+                            </div>
+                    <div class="transform hover:-translate-y-1 transition-transform duration-300">
+                        <div class="bg-gradient-to-r from-yellow-400 to-yellow-600 dark:from-yellow-500 dark:to-yellow-700 text-white rounded-lg shadow-md flex items-center p-5 shine-button">
+                            <i class="fas fa-hand-holding text-4xl mr-5 opacity-80"></i>
+                            <div>
+                                <h2 class="text-3xl font-bold">{{ $documents->where('status', 'Prestado')->count() }}</h2>
+                                <p class="opacity-80">Préstamos activos</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="transform hover:-translate-y-1 transition-transform duration-300">
+                        <div class="bg-gradient-to-r from-green-400 to-green-600 dark:from-green-500 dark:to-green-700 text-white rounded-lg shadow-md flex items-center p-5 shine-button">
+                            <i class="fas fa-check-circle text-4xl mr-5 opacity-80"></i>
+                            <div>
+                                <h2 class="text-3xl font-bold">{{ $documents->where('status', 'Devuelto')->count() }}</h2>
+                                <p class="opacity-80">Préstamos totales completados</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="transform hover:-translate-y-1 transition-transform duration-300">
+                        <div class="bg-gradient-to-r from-red-500 to-pink-500 dark:from-red-600 dark:to-pink-600 text-white rounded-lg shadow-md flex items-center p-5 shine-button">
+                            <i class="fas fa-exclamation-triangle text-4xl mr-5 opacity-80"></i>
+                            <div>
+                                <h2 class="text-3xl font-bold">{{ $documents->where('status', 'Prestado')->filter(function($doc) {
+                                    return $doc->isVencido();
+                                })->count() }}</h2>
+                                <p class="opacity-80">Préstamos vencidos</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                    <!-- Tabla de préstamos -->
+                <div class="overflow-x-auto bg-white/5 dark:bg-black/10 rounded-lg backdrop-blur-sm shadow-md">
+                    <table class="min-w-full" id="loans-table">
+                        <thead>
+                            <tr class="bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800">
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200">Código</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200">Título</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200">Solicitante</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200">Fecha Préstamo</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200">Fecha Devolución</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200">Estado</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200">Acciones</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-200">Gestionador</th>
+
+                                </tr>
+                            </thead>
+                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                @forelse($documents as $document)
+                                <tr class="hover:bg-gray-100 dark:hover:bg-gray-700/40 {{ $document->isVencido() ? 'bg-red-100 dark:bg-red-900/20' : '' }}">
+                                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ $document->book->N_codigo }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ $document->book->title }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ $document->applicant_name }}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                                        @if($document->fecha_prestamo)
+                                            {{ \Carbon\Carbon::parse($document->fecha_prestamo)->format('d/m/Y H:i:s') }}
+                                        @else
+                                        No registrada
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                                        @if($document->fecha_devolucion)
+                                            {{ \Carbon\Carbon::parse($document->fecha_devolucion)->format('d/m/Y H:i:s') }}
+                                        @if($document->status == 'Prestado' && $document->isVencido())
+                                            <span class="ml-1 px-2 py-1 text-xs font-semibold rounded-full bg-gradient-to-r from-red-500 to-pink-500 text-white">Vencido</span>
+                                        @endif
+                                        @else
+                                        Pendiente
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-3 text-sm">
+                                        <span class="px-3 py-1 text-xs font-semibold rounded-full
+                                            {{ $document->status == 'Prestado' ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white' :
+                                            ($document->status == 'Devuelto' ? 'bg-gradient-to-r from-green-400 to-green-600 text-white' :
+                                            'bg-gradient-to-r from-blue-400 to-blue-600 text-white') }}">
+                                            {{ $document->status }}
+                                                        </span>
+                                        @if($document->comprobantes && $document->comprobantes->count() > 0)
+                                            <span class="mt-1 block px-3 py-1 text-xs font-semibold rounded-full bg-gradient-to-r from-blue-400 to-indigo-600 text-white"
+                                                  data-tooltip-target="tooltip-comprobantes-{{ $document->id }}">
+                                                <i class="fas fa-receipt"></i>
+                                                {{ $document->comprobantes->where('pivot.estado', 'prestado')->count() }}/{{ $document->comprobantes->count() }}
+                                            </span>
+                                            <div id="tooltip-comprobantes-{{ $document->id }}" role="tooltip" class="absolute z-10 invisible inline-block px-3 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip">
+                                                Préstamo de comprobantes individuales
+                                                <div class="tooltip-arrow" data-popper-arrow></div>
+                                                    </div>
+                                            @endif
+                                    </td>
+
+                                    <td class="px-4 py-3 text-sm">
+                                        <div class="flex flex-col sm:flex-row gap-2">
+                                                <a href="{{ route('document.loan.show', $document->id) }}"
+                                               class="inline-flex items-center justify-center p-2 px-4 bg-gradient-to-r from-blue-400/80 to-blue-600/80 hover:from-blue-500 hover:to-blue-700 text-white rounded-lg transition-all duration-300 transform hover:-translate-y-1 shadow-md hover:shadow-lg text-sm shine-button"
+                                                   title="Ver detalles">
+                                                <i class="fas fa-eye mr-2"></i> Ver detalles
+                                                </a>
+                                                @if($document->status !== 'Devuelto')
+                                                @if(str_contains(strtolower($document->book->category->cat_title), 'comprobante'))
+                                                        <a href="{{ route('comprobantes.manage', $document->id) }}"
+                                                            class="inline-flex items-center justify-center p-2 px-4 bg-gradient-to-r from-indigo-400/80 to-purple-500/80 hover:from-indigo-500 hover:to-purple-600 text-white rounded-lg transition-all duration-300 transform hover:-translate-y-1 shadow-md hover:shadow-lg text-sm shine-button"
+                                                                title="Gestionar comprobantes">
+                                                        <i class="fas fa-tasks mr-2"></i> Gestionar
+                                                        </a>
+                                                    @endif
+                                                    <button type="button"
+                                                        class="inline-flex items-center justify-center p-2 px-4 bg-gradient-to-r from-green-400/80 to-green-600/80 hover:from-green-500 hover:to-green-700 text-white rounded-lg transition-all duration-300 transform hover:-translate-y-1 shadow-md hover:shadow-lg text-sm mark-as-returned shine-button"
+                                                            data-id="{{ $document->id }}"
+                                                            title="Marcar como devuelto">
+                                                        <i class="fas fa-check mr-2"></i> Devolver
+                                                    </button>
+                                                @endif
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-3 text-sm">
+                                        @if($document->user)
+                                        <div class="flex items-center">
+                                            @if($document->user->profile_photo_path)
+                                            <img class="h-8 w-8 rounded-full object-cover mr-2 border border-gray-200 dark:border-gray-700"
+                                                src="{{ asset($document->user->profile_photo_path) }}"
+                                                alt="{{ $document->user->name }}">
+                                            @else
+                                            <div class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center mr-2 text-white text-sm font-bold">
+                                                {{ substr($document->user->name, 0, 1) }}
+                                            </div>
+                                            @endif
+                                            <div>
+                                                <div class="font-medium text-gray-800 dark:text-gray-200">{{ $document->user->name }}</div>
+                                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ $document->user->position ?? 'Usuario' }}</div>
+                                            </div>
+                                        </div>
+                                        @else
+                                        <div class="flex items-center">
+                                            <div class="h-8 w-8 rounded-full bg-gray-400 flex items-center justify-center mr-2 text-white text-sm font-bold">
+                                                <i class="fas fa-user-slash"></i>
+                                            </div>
+                                            <div>
+                                                <div class="font-medium text-gray-600 dark:text-gray-400">Usuario eliminado</div>
+                                                <div class="text-xs text-gray-500 dark:text-gray-400">Registro mantenido</div>
+                                            </div>
+                                        </div>
+                                        @endif
+                                    </td>
+                                </tr>
+                                @empty
+                                    <tr>
+                                    <td colspan="7" class="px-4 py-6 text-center">
+                                        <div class="inline-flex items-center px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded">
+                                            <i class="fas fa-info-circle mr-2"></i> No hay préstamos registrados
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Paginación -->
+                <div class="flex flex-col md:flex-row justify-between items-center mt-6">
+                    <div class="text-sm text-gray-600 dark:text-gray-400 mb-4 md:mb-0">
+                            Mostrando {{ $documents->firstItem() ?? 0 }} - {{ $documents->lastItem() ?? 0 }}
+                            de {{ $documents->total() ?? 0 }} préstamos
+                        </div>
+                            <div>
+                        {{ $documents->links() }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para gestionar comprobantes  -->
+<div id="comprobanteModal" class="fixed inset-0 z-50 hidden overflow-y-auto pt-20" aria-modal="true" role="dialog">
+    <div class="flex items-center justify-center min-h-screen p-4 text-center sm:block">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75 transition-opacity" id="modal-overlay" onclick="document.getElementById('comprobanteModal').classList.add('hidden')"></div>
+        <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-7xl w-full">
+            <div class="bg-gradient-to-r from-red-500 to-pink-600 dark:from-red-600 dark:to-pink-700 text-white p-4 flex justify-between items-center">
+                <h5 class="text-lg font-semibold flex items-center">
+                        <i class="fas fa-folder-open mr-2"></i>
+                    Gestión de Comprobantes - Préstamo #<span id="loan-id"></span>
+                </h5>
+                <button type="button" class="text-white hover:text-gray-100 transition-colors duration-200 shine-button p-2 rounded-full hover:bg-white/10" onclick="document.getElementById('comprobanteModal').classList.add('hidden')">
+                    <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="p-6">
+                <!-- Información de la carpeta principal -->
+                <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 mb-6 border border-gray-200 dark:border-gray-600">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                            <h6 class="text-sm font-semibold text-gray-600 dark:text-gray-300 flex items-center">
+                                    <i class="fas fa-book mr-2"></i>Carpeta
+                                </h6>
+                            <p class="book-title text-gray-900 dark:text-white"></p>
+                            </div>
+                            <div>
+                            <h6 class="text-sm font-semibold text-gray-600 dark:text-gray-300 flex items-center">
+                                    <i class="fas fa-hashtag mr-2"></i>Código
+                                </h6>
+                            <p class="book-code text-gray-900 dark:text-white"></p>
+                            </div>
+                            <div>
+                            <h6 class="text-sm font-semibold text-gray-600 dark:text-gray-300 flex items-center">
+                                    <i class="fas fa-calendar mr-2"></i>Año
+                                </h6>
+                            <p class="book-year text-gray-900 dark:text-white"></p>
+                            </div>
+                            <div>
+                            <h6 class="text-sm font-semibold text-gray-600 dark:text-gray-300 flex items-center">
+                                    <i class="fas fa-bookmark mr-2"></i>Codigo Fisico
+                                </h6>
+                            <p class="book-tomo text-gray-900 dark:text-white"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                <!-- Estadísticas de comprobantes -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 comprobantes-stats">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+
+                <!-- Listado de comprobantes -->
+                <div class="comprobantes-list">
+                    <!-- Se llenará dinámicamente -->
+        </div>
+    </div>
+
+            <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 flex justify-end">
+                <button type="button"
+                        class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-gray-400/80 to-gray-600/80 hover:from-gray-500 hover:to-gray-700 text-white rounded-lg transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-1 shine-button"
+                        onclick="document.getElementById('comprobanteModal').classList.add('hidden')">
+                    <i class="fas fa-times-circle mr-2"></i> Cerrar ventana
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para detalles del comprobante - Modernizado -->
+<div id="comprobanteDetailModal" class="fixed inset-0 z-50 hidden overflow-y-auto pt-20" aria-modal="true" role="dialog">
+    <div class="flex items-center justify-center min-h-screen p-4 text-center sm:block">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75 transition-opacity" onclick="document.getElementById('comprobanteDetailModal').classList.add('hidden')"></div>
+        <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+            <div class="bg-gradient-to-r from-red-500 to-pink-600 dark:from-red-600 dark:to-pink-700 text-white p-4 flex justify-between items-center">
+                <h5 class="text-lg font-semibold flex items-center">
+                    <i class="fas fa-receipt mr-2"></i>
+                    Detalles del Comprobante
+                </h5>
+                <button type="button" class="text-white hover:text-gray-100 transition-colors duration-200 shine-button p-2 rounded-full hover:bg-white/10" onclick="document.getElementById('comprobanteDetailModal').classList.add('hidden')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <!-- Se llenará dinámicamente -->
+                </div>
+
+            <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 flex justify-end">
+                <button type="button"
+                        class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-gray-400/80 to-gray-600/80 hover:from-gray-500 hover:to-gray-700 text-white rounded-lg transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-1 shine-button"
+                        onclick="document.getElementById('comprobanteDetailModal').classList.add('hidden')">
+                    <i class="fas fa-times-circle mr-2"></i> Cerrar ventana
+                </button>
+            </div>
+            </div>
+        </div>
+    </div>
+
+@push('styles')
+<link rel="stylesheet" href="//cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
+<style>
+    /* Estilos para el select en modo oscuro */
+    .dark select option {
+        background-color: #1f2937; /* Color de fondo para modo oscuro */
+        color: white;
+    }
+
+    select option {
+        padding: 8px;
+    }
+
+    /* Resto de los estilos existentes */
+    .bg-gradient-to-r {
+        background-size: 200% 200%;
+        animation: gradientMove 5s ease infinite;
+    }
+
+    @keyframes gradientMove {
+        0% {background-position: 0% 50%;}
+        50% {background-position: 100% 50%;}
+        100% {background-position: 0% 50%;}
+    }
+
+    /* Estilos DateRangePicker */
+    .dark .daterangepicker {
+        background-color: #1f2937;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: white;
+    }
+
+    .dark .daterangepicker .calendar-table {
+        background-color: #111827;
+        border: none;
+    }
+
+    .dark .daterangepicker td.off {
+        background-color: #374151;
+        color: #6b7280;
+    }
+
+    .dark .daterangepicker td.active {
+        background-color: #3b82f6;
+        color: white;
+    }
+
+    .dark .daterangepicker .drp-buttons {
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .dark .daterangepicker .drp-selected {
+        color: #d1d5db;
+    }
+
+    .dark .daterangepicker .btn {
+        background-color: #3b82f6;
+        color: white;
+        border: none;
+    }
+
+    /* Estilos del loader */
+    .loader {
+        border-top-color: #3b82f6;
+        -webkit-animation: spinner 1.5s linear infinite;
+        animation: spinner 1.5s linear infinite;
+    }
+
+    @-webkit-keyframes spinner {
+        0% { -webkit-transform: rotate(0deg); }
+        100% { -webkit-transform: rotate(360deg); }
+    }
+
+    @keyframes spinner {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* Asegurar ancho completo */
+    #loans-table {
+        width: 100% !important;
+    }
+
+    .dataTables_wrapper {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* Estilos para botones más atractivos */
+    .inline-flex {
+        white-space: nowrap;
+    }
+
+    /* Efecto de brillo para los botones */
+    .shine-button {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .shine-button:after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%);
+        transform: rotate(30deg);
+        opacity: 0;
+        transition: opacity 0.6s;
+    }
+
+    .shine-button:hover:after {
+        opacity: 1;
+        animation: shine 1.5s;
+    }
+
+    @keyframes shine {
+        0% {
+            transform: translateX(-200%) rotate(30deg);
+        }
+        100% {
+            transform: translateX(200%) rotate(30deg);
+        }
+    }
+
+    /* Asegurar que el contenido de la tabla es completamente visible en dispositivos móviles */
+    @media (max-width: 640px) {
+        .flex-col {
+            width: 100%;
+        }
+
+        td [class*="inline-flex"] {
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+    }
+</style>
+@endpush
+
+@push('scripts')
+<script src="//cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script src="//cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+<script src="//cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+<script src="//cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+<script>
+$(document).ready(function() {
+    // ======== INICIALIZACIÓN DE COMPONENTES ========
+
+    // Inicializar DataTable con filtros personalizados
+    var loansTable = $('#loans-table').DataTable({
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json'
+        },
+        responsive: true,
+        ordering: true,
+        "dom": 'lrtp', // Ocultar el buscador de DataTables
+        "pageLength": 25
+    });
+
+    // Inicializar DateRangePicker
+    $('#dateRangePicker').daterangepicker({
+        opens: 'left',
+        locale: {
+            format: 'DD/MM/YYYY',
+            applyLabel: 'Aplicar',
+            cancelLabel: 'Cancelar',
+            fromLabel: 'Desde',
+            toLabel: 'Hasta',
+            daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
+            monthNames: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+            firstDay: 1
+        },
+        autoUpdateInput: false
+    });
+
+    // Inicializar tooltips (usando Tippy.js si está disponible)
+    if (typeof tippy !== 'undefined') {
+        tippy('[data-tooltip-target]', {
+            content: (reference) => {
+                const tooltipId = reference.getAttribute('data-tooltip-target');
+                const tooltipElement = document.getElementById(tooltipId);
+                return tooltipElement.innerHTML;
+            },
+            allowHTML: true,
+            theme: 'light',
+            placement: 'top',
+            arrow: true
+        });
+    }
+
+    // Aplicar efecto shine a todos los botones
+    document.querySelectorAll('.shine-button').forEach(element => {
+        element.classList.add('shine-button');
+    });
+
+    // ======== FUNCIONES DE FILTRADO MEJORADAS ========
+
+    // Filtrado por texto
+    $('#searchInput').on('keyup', function() {
+        loansTable.search($(this).val()).draw();
+    });
+
+    // Buscar con botón
+    $('#searchButton').on('click', function() {
+        loansTable.search($('#searchInput').val()).draw();
+    });
+
+    // Filtrado por estado - CORREGIDO
+    $('#statusFilter').on('change', function() {
+        let selectedValue = $(this).val();
+
+        // Cambiar el color del selector según selección
+        $(this).removeClass('bg-yellow-500 bg-green-500 bg-blue-500');
+
+        if (selectedValue === 'Prestado') {
+            $(this).addClass('bg-yellow-500 dark:bg-yellow-600');
+        } else if (selectedValue === 'Devuelto') {
+            $(this).addClass('bg-green-500 dark:bg-green-600');
+        } else if (selectedValue === 'Pendiente') {
+            $(this).addClass('bg-blue-500 dark:bg-blue-600');
+        }
+
+        // Filtrado personalizado usando búsqueda en todas las columnas
+        if (selectedValue) {
+            loansTable.search('').columns().search('').draw(); // Limpiar búsquedas anteriores
+
+            // Crear función personalizada de filtrado para la columna de estado
+            $.fn.dataTable.ext.search.pop(); // Eliminar filtros anteriores
+            $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+                // Buscar la columna que contiene el estado (normalmente la 6ª o 7ª)
+                for (let i = 0; i < data.length; i++) {
+                    if (data[i] && data[i].includes(selectedValue)) {
+                        return true;
+                    }
+                }
+                return false;
+            });
+        } else {
+            // Eliminar filtros personalizados si no hay valor seleccionado
+            $.fn.dataTable.ext.search.pop();
+        }
+
+        loansTable.draw(); // Redibujar tabla con filtros
+        console.log('Filtrado por estado:', selectedValue); // Para depuración
+    });
+
+    // ======== BOTONES DE FILTRO RÁPIDO ========
+
+    // Añadir botones de filtrado rápido
+    function addQuickFilterButtons() {
+        const buttonContainer = $('<div class="flex flex-wrap gap-2 mt-4 mb-6"></div>');
+
+        // Botones para filtrar por estado
+        buttonContainer.append(`
+            <button type="button" class="status-filter-btn px-4 py-2 bg-gradient-to-r from-gray-400/80 to-gray-600/80 hover:from-gray-500 hover:to-gray-700 text-white rounded-lg transition-all duration-300 hover:-translate-y-1 shadow-md hover:shadow-lg text-sm shine-button active" data-status="">
+                <i class="fas fa-list mr-2"></i> Todos
+            </button>
+
+            <button type="button" class="status-filter-btn px-4 py-2 bg-gradient-to-r from-yellow-400/80 to-yellow-600/80 hover:from-yellow-500 hover:to-yellow-700 text-white rounded-lg transition-all duration-300 hover:-translate-y-1 shadow-md hover:shadow-lg text-sm shine-button" data-status="Prestado">
+                <i class="fas fa-hand-holding mr-2"></i> Prestados
+            </button>
+
+            <button type="button" class="status-filter-btn px-4 py-2 bg-gradient-to-r from-green-400/80 to-green-600/80 hover:from-green-500 hover:to-green-700 text-white rounded-lg transition-all duration-300 hover:-translate-y-1 shadow-md hover:shadow-lg text-sm shine-button" data-status="Devuelto">
+                <i class="fas fa-check-circle mr-2"></i> Devueltos
+            </button>
+
+            <button type="button" class="status-filter-btn px-4 py-2 bg-gradient-to-r from-blue-400/80 to-blue-600/80 hover:from-blue-500 hover:to-blue-700 text-white rounded-lg transition-all duration-300 hover:-translate-y-1 shadow-md hover:shadow-lg text-sm shine-button" data-status="Pendiente">
+                <i class="fas fa-clock mr-2"></i> Pendientes
+            </button>
+
+            <button type="button" class="vencidos-filter-btn px-4 py-2 bg-gradient-to-r from-red-400/80 to-red-600/80 hover:from-red-500 hover:to-red-700 text-white rounded-lg transition-all duration-300 hover:-translate-y-1 shadow-md hover:shadow-lg text-sm shine-button" data-status="Vencido">
+                <i class="fas fa-exclamation-triangle mr-2"></i> Vencidos
+            </button>
+        `);
+
+        // Insertar botones después de las estadísticas
+        $('.grid.grid-cols-1.sm\\:grid-cols-2.lg\\:grid-cols-4').after(buttonContainer);
+
+        // Aplicar el efecto shine a los botones
+        document.querySelectorAll('.shine-button').forEach(element => {
+            element.classList.add('shine-button');
+        });
+    }
+
+    // Añadir los botones de filtrado rápido a la página
+    addQuickFilterButtons();
+
+    // Manejar clics en botones de filtrado rápido por estado
+    $(document).on('click', '.status-filter-btn', function() {
+        const status = $(this).data('status');
+
+        // Actualizar UI de los botones
+        $('.status-filter-btn, .vencidos-filter-btn').removeClass('active opacity-80');
+        $(this).addClass('active opacity-80');
+
+        // Configurar el select para que coincida
+        $('#statusFilter').val(status);
+
+        // Realizar filtrado directo
+        filtrarPorEstado(status);
+    });
+
+    // Manejar clic en botón de vencidos
+    $(document).on('click', '.vencidos-filter-btn', function() {
+        // Actualizar UI de los botones
+        $('.status-filter-btn, .vencidos-filter-btn').removeClass('active opacity-80');
+        $(this).addClass('active opacity-80');
+
+        // Filtrado por préstamos vencidos
+        filtrarPorVencidos();
+    });
+
+    // Función para filtrar por estado
+    function filtrarPorEstado(estado) {
+        console.log('Filtrando por estado:', estado);
+
+        // Limpiar filtros previos
+        $.fn.dataTable.ext.search.pop();
+
+        if (estado) {
+            // Usar filtrado personalizado
+            $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+                // Buscar en todas las columnas
+                for (let i = 0; i < data.length; i++) {
+                    // Buscar coincidencia exacta con el estado
+                    if (data[i] && data[i].trim() === estado) {
+                        return true;
+                    }
+                    // O buscar elementos que contienen el estado (para celdas con HTML)
+                    if (data[i] && data[i].indexOf(estado) > -1) {
+                        return true;
+                    }
+                }
+                return false;
+            });
+        }
+
+        // Redibujar tabla
+        loansTable.draw();
+    }
+
+    // Función para filtrar préstamos vencidos
+    function filtrarPorVencidos() {
+        console.log('Filtrando préstamos vencidos');
+
+        // Limpiar filtros previos
+        $.fn.dataTable.ext.search.pop();
+
+        // Usar filtrado personalizado para vencidos
+        $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+            // Verificar elementos con clase o texto "Vencido"
+            const row = loansTable.row(dataIndex).node();
+            return $(row).hasClass('bg-red-100') ||
+                   $(row).find('.bg-red-100').length > 0 ||
+                   data.some(cell => cell && cell.includes('Vencido'));
+        });
+
+        // Redibujar tabla
+        loansTable.draw();
+    }
+
+    // ======== EVENTOS DEL DATERANGEPICKER ========
+
+    $('#dateRangePicker').on('apply.daterangepicker', function(ev, picker) {
+        $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
+
+        // Guardar fechas en formato que pueda usar DataTables para filtrado
+        $(this).data('start-date', picker.startDate.format('YYYY-MM-DD'));
+        $(this).data('end-date', picker.endDate.format('YYYY-MM-DD'));
+
+        // Crear filtro personalizado para DataTables
+        $.fn.dataTable.ext.search.push(
+            function(settings, data, dataIndex) {
+                let startDate = moment($('#dateRangePicker').data('start-date'));
+                let endDate = moment($('#dateRangePicker').data('end-date'));
+                let fecha = moment(data[3], 'DD/MM/YYYY'); // Columna de fecha de préstamo (ajustar índice si es necesario)
+
+                if (startDate <= fecha && fecha <= endDate) {
+                    return true;
+                }
+                return false;
+            }
+        );
+
+        // Aplicar filtro
+        loansTable.draw();
+    });
+
+    $('#dateRangePicker').on('cancel.daterangepicker', function() {
+        $(this).val('');
+
+        // Eliminar filtro de fechas
+        $.fn.dataTable.ext.search.pop();
+        loansTable.draw();
+    });
+
+    // Establecer valor del daterangepicker si hay parámetros en la URL
+    let urlParams = new URLSearchParams(window.location.search);
+    let fechaInicio = urlParams.get('fecha_inicio');
+    let fechaFin = urlParams.get('fecha_fin');
+
+    if (fechaInicio && fechaFin) {
+        let startDate = moment(fechaInicio);
+        let endDate = moment(fechaFin);
+
+        $('#dateRangePicker').val(startDate.format('DD/MM/YYYY') + ' - ' + endDate.format('DD/MM/YYYY'));
+    }
+
+    // ======== ACCIONES DE PRÉSTAMOS ========
+
+    // Marcar préstamo como devuelto
+    $('.mark-as-returned').click(function() {
+        let id = $(this).data('id');
+
+                        Swal.fire({
+            title: '¿Marcar como devuelto?',
+            text: "¿Está seguro de que desea marcar este préstamo como devuelto?",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#10b981',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Sí, marcar como devuelto',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: `/document/loan/${id}`,
+                    type: 'PUT',
+                    data: {
+                        status: 'Devuelto',
+                        _token: '{{ csrf_token() }}'
+                    },
+                    success: function(response) {
+                        Swal.fire(
+                            '¡Actualizado!',
+                            'El préstamo ha sido marcado como devuelto.',
+                            'success'
+                        ).then(() => {
+                            location.reload();
+                        });
+                    },
+                    error: function() {
+                        Swal.fire(
+                            'Error',
+                            'No se pudo actualizar el estado del préstamo.',
+                            'error'
+                        );
+                    }
+                });
+            }
+        });
+    });
+
+    // ======== GESTIÓN DE COMPROBANTES ========
+
+    // Abrir modal de comprobantes
+    $('.manage-comprobantes').click(function() {
+        let loanId = $(this).data('id');
+
+        // Actualizar ID de préstamo en modal
+        $('#loan-id').text(loanId);
+
+        // Mostrar loading
+        $('.comprobantes-stats').html('');
+        $('.comprobantes-list').html(`
+            <div class="flex justify-center items-center p-8">
+                <div class="border-4 border-t-blue-500 rounded-full w-12 h-12 loader"></div>
+                <p class="ml-4 text-gray-700 dark:text-gray-300">Cargando comprobantes...</p>
+                        </div>
+                    `);
+
+        // Mostrar modal
+        document.getElementById('comprobanteModal').classList.remove('hidden');
+
+        // Cargar comprobantes
+        $.ajax({
+            url: `/document/${loanId}/comprobantes`,
+            method: 'GET',
+            success: function(response) {
+                console.log('Respuesta:', response); // Para depuración
+
+                if (response.success) {
+                    // Actualizar información del libro
+                    if (response.book) {
+                        $('.book-title').text(response.book.title);
+                        $('.book-code').text(response.book.code);
+                        $('.book-year').text(response.book.year);
+                        $('.book-tomo').text(response.book.tomo);
+                    }
+
+                    // Mostrar estadísticas con gradientes modernos
+                    if (response.stats) {
+                        const stats = response.stats;
+                        let statsHtml = `
+                            <div class="transform hover:-translate-y-1 transition-transform duration-300">
+                                <div class="bg-gradient-to-r from-blue-500 to-indigo-500 dark:from-blue-600 dark:to-indigo-600 text-white p-4 rounded-lg text-center shadow-md shine-button">
+                                    <h3 class="text-2xl font-bold">${stats.total}</h3>
+                                    <p class="text-sm opacity-80">Total comprobantes</p>
+                            </div>
+                            </div>
+                            <div class="transform hover:-translate-y-1 transition-transform duration-300">
+                                <div class="bg-gradient-to-r from-yellow-400 to-yellow-600 dark:from-yellow-500 dark:to-yellow-700 text-white p-4 rounded-lg text-center shadow-md shine-button">
+                                    <h3 class="text-2xl font-bold">${stats.prestados}</h3>
+                                    <p class="text-sm opacity-80">Pendientes</p>
+                            </div>
+                        </div>
+                            <div class="transform hover:-translate-y-1 transition-transform duration-300">
+                                <div class="bg-gradient-to-r from-green-400 to-green-600 dark:from-green-500 dark:to-green-700 text-white p-4 rounded-lg text-center shadow-md shine-button">
+                                    <h3 class="text-2xl font-bold">${stats.devueltos}</h3>
+                                    <p class="text-sm opacity-80">Devueltos</p>
+                    </div>
+                            </div>
+                            <div class="transform hover:-translate-y-1 transition-transform duration-300">
+                                <div class="bg-gradient-to-r from-red-400 to-red-600 dark:from-red-500 dark:to-red-700 text-white p-4 rounded-lg text-center shadow-md shine-button">
+                                    <h3 class="text-2xl font-bold">${stats.vencidos}</h3>
+                                    <p class="text-sm opacity-80">Vencidos</p>
+                                </div>
+                            </div>
+                        `;
+                        $('.comprobantes-stats').html(statsHtml);
+                    }
+
+                    // Construir lista de comprobantes con estilos modernos
+                    let html = '<div class="overflow-x-auto bg-white/5 dark:bg-black/10 rounded-lg backdrop-blur-sm border border-gray-200 dark:border-gray-700">';
+                    html += '<table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">';
+                    html += `
+                        <thead class="bg-gray-100 dark:bg-gray-700">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">N° Comprobante</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">N° Hojas</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Estado</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Fecha Préstamo</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Fecha Devolución</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    `;
+
+                    if (response.comprobantes && response.comprobantes.length > 0) {
+                        response.comprobantes.forEach(comp => {
+                            const fechaPrestamo = comp.fecha_prestamo ? new Date(comp.fecha_prestamo).toLocaleDateString() : 'No registrada';
+                            const fechaDevolucion = comp.fecha_devolucion ? new Date(comp.fecha_devolucion).toLocaleDateString() : 'Pendiente';
+
+                            html += `
+                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.numero_comprobante}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${comp.n_hojas}</td>
+                                    <td class="px-4 py-3 text-sm">
+                                        <span class="px-3 py-1 text-xs font-semibold rounded-full ${comp.estado === 'prestado' ? 'bg-gradient-to-r from-yellow-400 to-yellow-600' : 'bg-gradient-to-r from-green-400 to-green-600'} text-white">
+                                            ${comp.estado}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${fechaPrestamo}</td>
+                                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">${fechaDevolucion}</td>
+                                    <td class="px-4 py-3 text-sm">
+                                        <div class="flex flex-wrap gap-1">
+                                            <button class="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-blue-400/80 to-blue-600/80 hover:from-blue-500 hover:to-blue-700 text-white rounded-lg transition-all duration-300 hover:-translate-y-1 shadow-md hover:shadow-lg text-xs shine-button view-comprobante-details"
+                                                    data-id="${comp.id}">
+                                                <i class="fas fa-eye mr-1"></i> Ver detalles
+                                    </button>
+                                            ${comp.estado === 'prestado' ? `
+                                                <button class="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-green-400/80 to-green-600/80 hover:from-green-500 hover:to-green-700 text-white rounded-lg transition-all duration-300 hover:-translate-y-1 shadow-md hover:shadow-lg text-xs shine-button return-comprobante"
+                                                        data-loan="${response.document_id}"
+                                                        data-comprobante="${comp.id}">
+                                                    <i class="fas fa-check mr-1"></i> Devolver
+                                            </button>
+                                            ` : ''}
+                                            ${comp.pdf_file ? `
+                                                <a href="/comprobantes/${comp.pdf_file}"
+                                                   class="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-red-400/80 to-red-600/80 hover:from-red-500 hover:to-red-700 text-white rounded-lg transition-all duration-300 hover:-translate-y-1 shadow-md hover:shadow-lg text-xs shine-button"
+                                                   target="_blank">
+                                                    <i class="fas fa-file-pdf mr-1"></i> Ver PDF
+                                                </a>
+                                    ` : ''}
+                                </div>
+                                    </td>
+                                </tr>
+                    `;
+                });
+                    } else {
+                        html += `
+                            <tr>
+                                <td colspan="6" class="px-4 py-6 text-center text-gray-500 dark:text-gray-400">
+                                    <div class="flex justify-center items-center">
+                                        <i class="fas fa-info-circle mr-2 text-blue-500"></i>
+                                        No hay comprobantes registrados
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    }
+
+                    html += '</tbody></table></div>';
+                    $('.comprobantes-list').html(html);
+
+                    // Aplicar efecto shine a los nuevos botones
+                    document.querySelectorAll('.shine-button').forEach(element => {
+                        element.classList.add('shine-button');
+                    });
+                } else {
+                    $('.comprobantes-list').html(`
+                        <div class="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 p-4 rounded-lg flex items-center">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>
+                            ${response.message || 'Error al cargar los comprobantes'}
+                        </div>
+                    `);
+                }
+            },
+            error: function(xhr) {
+                console.error('Error:', xhr);
+                $('.comprobantes-list').html(`
+                    <div class="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 p-4 rounded-lg flex items-center">
+                        <i class="fas fa-exclamation-circle mr-2"></i>
+                        Error al cargar los comprobantes
+                    </div>
+                `);
+            }
+        });
+    });
+
+    // Ver detalles del comprobante - Modernizado con textos en botones
+    $(document).on('click', '.view-comprobante-details', function() {
+        const comprobanteId = $(this).data('id');
+
+        $('#comprobanteDetailModal .p-6').html(`
+            <div class="flex justify-center items-center p-6">
+                <div class="border-4 border-t-blue-500 rounded-full w-12 h-12 loader"></div>
+                <p class="ml-4 text-gray-700 dark:text-gray-300">Cargando detalles...</p>
+                                </div>
+                            `);
+
+        document.getElementById('comprobanteDetailModal').classList.remove('hidden');
+
+        $.ajax({
+            url: `/document/comprobante/${comprobanteId}/details`,
+            type: 'GET',
+            success: function(response) {
+                if(response.success) {
+                    const comprobante = response.comprobante;
+                    const prestamo = response.prestamo;
+                    const book = response.book;
+
+                    let detallesHTML = `
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                <h5 class="text-base font-semibold text-gray-800 dark:text-gray-200 flex items-center mb-3">
+                                    <i class="fas fa-receipt mr-2"></i> Información del Comprobante
+                                </h5>
+                                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden shadow-md">
+                                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                                        <tbody class="divide-y divide-gray-200 dark:divide-gray-600">
+                                            <tr>
+                                                <th class="px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 text-left bg-gray-100 dark:bg-gray-800">Número:</th>
+                                                <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${comprobante.numero_comprobante}</td>
+                                            </tr>
+                                            <tr>
+                                                <th class="px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 text-left bg-gray-100 dark:bg-gray-800">Hojas:</th>
+                                                <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${comprobante.n_hojas}</td>
+                                            </tr>
+                                            <tr>
+                                                <th class="px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 text-left bg-gray-100 dark:bg-gray-800">Estado:</th>
+                                                <td class="px-4 py-2 text-sm">
+                                                    <span class="px-2 py-1 text-xs rounded-full ${comprobante.estado === 'activo' ? 'bg-gradient-to-r from-green-400 to-green-600' : 'bg-gradient-to-r from-yellow-400 to-yellow-600'} text-white">
+                                                        ${comprobante.estado}
+                                            </span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <th class="px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 text-left bg-gray-100 dark:bg-gray-800">Descripción:</th>
+                                                <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${comprobante.descripcion || 'Sin descripción'}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    </div>
+                                </div>
+                    `;
+
+                    if(prestamo) {
+                        const diasRestantes = prestamo.dias_restantes;
+                        detallesHTML += `
+                                <div>
+                                <h5 class="text-base font-semibold text-gray-800 dark:text-gray-200 flex items-center mb-3">
+                                    <i class="fas fa-handshake mr-2"></i> Información del Préstamo
+                                </h5>
+                                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden shadow-md">
+                                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                                        <tbody class="divide-y divide-gray-200 dark:divide-gray-600">
+                                            <tr>
+                                                <th class="px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 text-left bg-gray-100 dark:bg-gray-800">Solicitante:</th>
+                                                <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${prestamo.applicant_name}</td>
+                                            </tr>
+                                            <tr>
+                                                <th class="px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 text-left bg-gray-100 dark:bg-gray-800">Fecha Préstamo:</th>
+                                                <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${new Date(prestamo.fecha_prestamo).toLocaleDateString()}</td>
+                                            </tr>
+                                            <tr>
+                                                <th class="px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 text-left bg-gray-100 dark:bg-gray-800">Fecha Devolución:</th>
+                                                <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">${new Date(prestamo.fecha_devolucion_esperada).toLocaleDateString()}</td>
+                                            </tr>
+                                            <tr>
+                                                <th class="px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 text-left bg-gray-100 dark:bg-gray-800">Tiempo:</th>
+                                                <td class="px-4 py-2 text-sm ${diasRestantes < 0 ? 'text-red-500 dark:text-red-400' : 'text-green-500 dark:text-green-400'}">
+                                                    ${Math.abs(diasRestantes)} días ${diasRestantes < 0 ? 'vencido' : 'restantes'}
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    </div>
+                                </div>
+                        `;
+                    }
+
+                    // Agregar sección para PDF si existe
+                    detallesHTML += `</div>`;
+
+                    if(comprobante.pdf_file) {
+                        detallesHTML += `
+                            <div class="mt-6 text-center">
+                                <a href="/comprobantes/${comprobante.pdf_file}" class="inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-red-400/80 to-red-600/80 hover:from-red-500 hover:to-red-700 text-white rounded-lg transition-all duration-300 hover:-translate-y-1 shadow-md hover:shadow-lg shine-button" target="_blank">
+                                    <i class="fas fa-file-pdf mr-2"></i> Ver PDF del Comprobante
+                                    </a>
+                                </div>
+                        `;
+                    }
+
+                    $('#comprobanteDetailModal .p-6').html(detallesHTML);
+
+                    // Aplicar efecto shine a los nuevos botones
+                    document.querySelectorAll('.shine-button').forEach(element => {
+                        element.classList.add('shine-button');
+                    });
+                    } else {
+                    $('#comprobanteDetailModal .p-6').html(`
+                        <div class="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 p-4 rounded-lg flex items-center">
+                            <i class="fas fa-exclamation-circle mr-2"></i> Error al cargar los detalles: ${response.message}
+                            </div>
+                        `);
+                    }
+            },
+            error: function() {
+                $('#comprobanteDetailModal .p-6').html(`
+                    <div class="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 p-4 rounded-lg flex items-center">
+                        <i class="fas fa-exclamation-circle mr-2"></i> Error al conectar con el servidor
+                        </div>
+                    `);
+            }
+        });
+    });
+
+    // Devolver comprobante individual - Mejora visual y efectos
+    $(document).on('click', '.return-comprobante', function() {
+        let btn = $(this);
+        let loanId = btn.data('loan');
+        let comprobanteId = btn.data('comprobante');
+
+                    Swal.fire({
+            title: '¿Devolver comprobante?',
+                    text: "¿Está seguro de que desea devolver este comprobante?",
+                    icon: 'question',
+                    showCancelButton: true,
+            confirmButtonColor: '#10b981',
+            cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Sí, devolver',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                btn.prop('disabled', true)
+                   .html('<i class="fas fa-spinner fa-spin mr-1"></i> Procesando...');
+
+                $.ajax({
+                    url: `/document/${loanId}/comprobante/${comprobanteId}/return`,
+                    type: 'PUT',
+                    data: { _token: '{{ csrf_token() }}' },
+                    success: function(response) {
+                        if (response.success) {
+                            // Actualizar la fila en la tabla
+                            let row = btn.closest('tr');
+                            row.find('.from-yellow-400').removeClass('from-yellow-400 to-yellow-600').addClass('from-green-400 to-green-600').text('devuelto');
+
+                            // Eliminar botón de devolución
+                            btn.remove();
+
+                            // Actualizar estadísticas
+                            if(response.stats) {
+                                $('.comprobantes-stats h3').eq(1).text(response.stats.prestados);
+                                $('.comprobantes-stats h3').eq(2).text(response.stats.devueltos);
+                            }
+
+                            Swal.fire({
+                                icon: 'success',
+                                title: '¡Devuelto!',
+                                text: 'El comprobante ha sido marcado como devuelto.',
+                                timer: 2000,
+                                showConfirmButton: false
+                            });
+
+                            if (response.allReturned) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: '¡Completado!',
+                                    text: 'Todos los comprobantes han sido devueltos. El préstamo se marcará como completado.',
+                                    showConfirmButton: true
+                            }).then(() => {
+                                    location.reload();
+                                });
+                            }
+                        } else {
+                            btn.prop('disabled', false)
+                               .html('<i class="fas fa-check mr-1"></i> Devolver');
+
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: response.message || 'No se pudo procesar la devolución'
+                            });
+                        }
+                    },
+                    error: function() {
+                        btn.prop('disabled', false)
+                           .html('<i class="fas fa-check mr-1"></i> Devolver');
+
+                        Swal.fire({
+                                icon: 'error',
+                            title: 'Error',
+                            text: 'No se pudo conectar con el servidor'
+                        });
+                    }
+                });
+            }
+        });
+    });
+
+    // Añadir clase shine-button a todos los botones para el efecto de brillo
+    $('.inline-flex, button').addClass('shine-button');
+});
+
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        document.getElementById('comprobanteModal').classList.add('hidden');
+        document.getElementById('comprobanteDetailModal').classList.add('hidden');
+    }
+});
+</script>
+@endpush
+@endsection

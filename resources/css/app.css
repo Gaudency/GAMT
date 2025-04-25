@@ -1,0 +1,83 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Tus estilos personalizados aquí */
+
+
+[x-cloak] {
+    display: none;
+}
+
+/* Ajustar modal para que aparezca más abajo */
+.modal, .dialog, .popup-form {
+    margin-top: 80px !important; /* Usa !important para sobrescribir estilos inline */
+    max-height: calc(100vh - 100px) !important;
+    overflow-y: auto !important;
+}
+
+/* Si es un componente específico, ajusta su selector adecuadamente */
+#userFormModal, .user-form-modal {
+    margin-top: 80px !important;
+}
+
+/* Asegúrate que el modal tenga un z-index alto para estar por encima de todo */
+.modal, .dialog, .popup-form, #userFormModal, .user-form-modal {
+    z-index: 9999 !important;
+}
+
+/* Ajustes para el contenido principal */
+#pageContent {
+    margin-top: 80px; /* Asegura que el contenido principal esté por debajo del header */
+}
+
+/* Estilo para el formulario en pantallas pequeñas */
+@media (max-width: 768px) {
+    .modal, .dialog, .popup-form, #userFormModal, .user-form-modal {
+        margin-top: 60px !important;
+        max-height: calc(100vh - 80px) !important;
+    }
+}
+
+/* Ocultar contenido con Alpine.js */
+[x-cloak] {
+    display: none;
+}
+
+/* Asegurar que todos los modales tengan margen superior adecuado */
+#userFormModal,
+[id^="editUserModal-"] {
+    margin-top: 80px;
+}
+
+/* Estilos responsivos */
+@media (max-width: 768px) {
+    #userFormModal,
+    [id^="editUserModal-"] {
+        margin-top: 60px;
+    }
+}
+
+/* Estilos para modo oscuro en modales */
+.dark #userFormModal .bg-white,
+.dark [id^="editUserModal-"] .bg-white {
+    @apply bg-gray-800;
+}
+
+.dark #userFormModal input,
+.dark #userFormModal select,
+.dark [id^="editUserModal-"] input,
+.dark [id^="editUserModal-"] select,
+.dark [id^="editUserModal-"] textarea {
+    @apply bg-gray-700 border-gray-600 text-gray-100;
+}
+
+.dark #userFormModal label,
+.dark [id^="editUserModal-"] label {
+    @apply text-gray-300;
+}
+
+/* Botones con degradado */
+.btn-gradient {
+    @apply bg-gradient-to-r from-red-500 to-pink-500 text-white;
+}
