@@ -182,8 +182,8 @@ class ComprobanteController extends Controller
 
         $comprobante->delete();
 
-        return redirect()->route('comprobantes.index', $book)
-                        ->with('message', 'Comprobante eliminado correctamente');
+        return redirect()->route('books.comprobantes.index', $book->id)
+                        ->with('success', 'Comprobante eliminado correctamente');
     }
 
     public function showComprobantes($book_id)
@@ -472,6 +472,49 @@ class ComprobanteController extends Controller
                 'file' => $e->getFile()
             ]);
             return back()->with('error', 'Error al generar el reporte: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Verifica si existen comprobantes en un rango específico para un libro.
+     * Responde con JSON para la solicitud AJAX.
+     */
+    public function checkRange(Request $request, Book $book)
+    {
+        $inicio = $request->query('inicio');
+        $fin = $request->query('fin');
+
+        if (!is_numeric($inicio) || !is_numeric($fin) || $inicio <= 0 || $fin < $inicio) {
+            return response()->json(['exists' => false, 'error' => 'Rango inválido'], 400); // Bad request
+        }
+
+        try {
+            $query = $book->comprobantes()
+                          ->whereBetween('numero_comprobante', [$inicio, $fin]);
+
+            $count = $query->count();
+            $exists = $count > 0;
+
+            $existingNumbers = [];
+            if ($exists) {
+                // Obtener algunos números existentes para mostrar como ejemplo (limitar para eficiencia)
+                $existingNumbers = $query->orderBy('numero_comprobante')
+                                         ->limit(10) // Limitar cuántos recuperamos
+                                         ->pluck('numero_comprobante')
+                                         ->toArray();
+            }
+
+            return response()->json([
+                'exists' => $exists,
+                'count' => $count,
+                'existing_numbers' => $existingNumbers
+            ]);
+
+        } catch (\Exception $e) {
+            // Loguear el error real en el servidor
+            Log::error('Error en checkRange para Book ID ' . $book->id . ': ' . $e->getMessage());
+            // Devolver una respuesta genérica de error al cliente
+            return response()->json(['exists' => false, 'error' => 'Error del servidor al verificar el rango.'], 500);
         }
     }
 }

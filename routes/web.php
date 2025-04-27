@@ -184,6 +184,8 @@ Route::middleware(['auth'])->group(function () {
             Route::get('{book}/comprobantes/report', [ComprobanteController::class, 'generateReport'])
                 ->name('comprobantes.report')
                 ->where('book', '[0-9]+');
+            Route::get('{book}/comprobantes/check-range', [ComprobanteController::class, 'checkRange'])
+                ->name('comprobantes.checkRange');
 
             Route::get('{book}/comprobantes', [ComprobanteController::class, 'index'])->name('comprobantes.index');
             Route::get('{book}/comprobantes/create', [ComprobanteController::class, 'create'])->name('comprobantes.create');

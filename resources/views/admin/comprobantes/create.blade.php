@@ -281,74 +281,123 @@
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const categoriaSelect = document.querySelector('select[name="category"]');
-        const comprobantesContainer = document.getElementById('comprobantes-container');
+        // --- Elementos del DOM ---
         const comprobanteInicio = document.getElementById('comprobante_inicio');
         const comprobanteFin = document.getElementById('comprobante_fin');
-        const totalComprobantes = document.getElementById('total_comprobantes');
-        const form = document.querySelector('form');
+        // Corregido: Seleccionar el span con id="total"
+        const totalSpan = document.getElementById('total');
+        const totalContainer = document.getElementById('totalComprobantes'); // El div contenedor
+        const warningContainer = document.getElementById('existingComprobanteWarning');
+        const warningMessageSpan = document.getElementById('warningMessage');
+        const submitBtn = document.getElementById('submitBtn');
+        const bookId = {{ $book->id }}; // Obtener el ID del libro
 
-        // Función para comprobar si es categoría de comprobante
-        function esComprobante(categoryText) {
-            return categoryText.toLowerCase().includes('comprobante');
-        }
-
-        // Función para calcular total de comprobantes
+        // --- Función para calcular total ---
         function calcularTotalComprobantes() {
             const inicio = parseInt(comprobanteInicio.value) || 0;
             const fin = parseInt(comprobanteFin.value) || 0;
-            if (inicio && fin && fin >= inicio) {
+
+            if (inicio > 0 && fin > 0 && fin >= inicio) {
                 const total = fin - inicio + 1;
-                totalComprobantes.textContent = total;
+                // Corregido: Actualizar el contenido del span
+                totalSpan.textContent = total;
+                totalContainer.classList.remove('warning'); // Quitar estilo de advertencia si lo tenía
             } else {
-                totalComprobantes.textContent = '0';
+                // Corregido: Actualizar el contenido del span
+                totalSpan.textContent = '0';
+                if (fin > 0 && inicio > 0 && fin < inicio) {
+                    // Añadir estilo de advertencia si el rango es inválido
+                    totalContainer.classList.add('warning');
+                } else {
+                    totalContainer.classList.remove('warning');
+                }
+            }
+            // Llamar a la verificación de rango cada vez que se calcula el total
+            checkExistingComprobantes();
+        }
+
+        // --- Función para verificar comprobantes existentes (NUEVO) ---
+        let checkTimeout; // Para evitar llamadas múltiples muy rápidas
+        function checkExistingComprobantes() {
+            clearTimeout(checkTimeout); // Cancela el timeout anterior si existe
+            const inicio = parseInt(comprobanteInicio.value) || 0;
+            const fin = parseInt(comprobanteFin.value) || 0;
+
+            // Ocultar advertencia y habilitar botón por defecto
+            warningContainer.classList.add('hidden');
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+            if (inicio > 0 && fin > 0 && fin >= inicio) {
+                // Esperar un poco antes de hacer la llamada AJAX (ej. 500ms)
+                checkTimeout = setTimeout(() => {
+                    fetch(`/books/${bookId}/comprobantes/check-range?inicio=${inicio}&fin=${fin}`, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            // Si usas CSRF en GET, descomenta la siguiente línea y asegúrate que el token esté disponible
+                            // 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Error en la respuesta del servidor');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.exists) {
+                            let message = `¡Advertencia! Ya existen ${data.count} comprobante(s) en este rango.`;
+                            if (data.existing_numbers && data.existing_numbers.length > 0) {
+                                // Mostrar solo los primeros 5 para no saturar
+                                const limit = 5;
+                                const displayNumbers = data.existing_numbers.slice(0, limit).join(', ');
+                                message += ` (Ej: ${displayNumbers}${data.existing_numbers.length > limit ? '...' : ''})`;
+                            }
+                            warningMessageSpan.textContent = message;
+                            warningContainer.classList.remove('hidden');
+                            // Opcional: Deshabilitar el botón si existen comprobantes (ya que el backend lo impedirá)
+                            // submitBtn.disabled = true;
+                            // submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                        } else {
+                            warningContainer.classList.add('hidden');
+                            submitBtn.disabled = false;
+                             submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error al verificar rango:', error);
+                        warningMessageSpan.textContent = 'No se pudo verificar el rango en el servidor.';
+                        warningContainer.classList.remove('hidden');
+                        // Decidir si deshabilitar o no en caso de error
+                        // submitBtn.disabled = true;
+                        // submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    });
+                }, 500); // 500ms de espera
+            } else {
+                 // Si el rango no es válido, ocultar advertencia y deshabilitar (o no)
+                 warningContainer.classList.add('hidden');
+                 if (fin > 0 && inicio > 0 && fin < inicio) {
+                     // submitBtn.disabled = true; // Deshabilitar si el rango es inválido
+                     // submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                 } else {
+                    // submitBtn.disabled = false;
+                    // submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                 }
             }
         }
 
-        // Verificar categoría inicial
-        if (categoriaSelect.selectedIndex > 0) {
-            const categoryTitle = categoriaSelect.options[categoriaSelect.selectedIndex].text;
-            if (esComprobante(categoryTitle)) {
-                comprobantesContainer.classList.remove('hidden');
-                calcularTotalComprobantes();
-            }
-        }
 
-        // Eventos de cambio de categoría
-        categoriaSelect.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            const categoryTitle = selectedOption.text;
-
-            if (esComprobante(categoryTitle)) {
-                comprobantesContainer.classList.remove('hidden');
-            } else {
-                comprobantesContainer.classList.add('hidden');
-                comprobanteInicio.value = '';
-                comprobanteFin.value = '';
-                totalComprobantes.textContent = '0';
-            }
-        });
-
-        // Calcular total con cada cambio
+        // --- Event Listeners ---
         comprobanteInicio.addEventListener('input', calcularTotalComprobantes);
         comprobanteFin.addEventListener('input', calcularTotalComprobantes);
 
-        // Validación de formulario
-        form.addEventListener('submit', function(e) {
-            if (categoriaSelect.selectedIndex > 0) {
-                const categoryTitle = categoriaSelect.options[categoriaSelect.selectedIndex].text;
+        // Calcular total inicial al cargar la página (si hay valores)
+        calcularTotalComprobantes();
 
-                if (esComprobante(categoryTitle)) {
-                    const inicio = parseInt(comprobanteInicio.value);
-                    const fin = parseInt(comprobanteFin.value);
-
-                    if (!inicio || !fin || fin < inicio) {
-                        e.preventDefault();
-                        alert('Por favor, ingrese un rango válido de comprobantes');
-                    }
-                }
-            }
-        });
+        // --- Remover código innecesario de categoría ---
+        // (Se eliminó la lógica de categoriaSelect y comprobantesContainer)
     });
 </script>
 @endpush
