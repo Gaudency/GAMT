@@ -143,7 +143,7 @@
                         </h1>
                     </div>
                     <div class="flex items-center space-x-4">
-                            <!-- Botón para abrir el chat de IA -->
+                            <!-- Botón para abrir el chat de IA
                         <button
                             onclick="console.log('Botón header clickeado'); window.dispatchEvent(new CustomEvent('toggle-ai-chat')); return false;"
                             class="ml-3 w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 flex items-center justify-center text-white transition-all duration-300 shadow-md hover:shadow-lg hover:scale-110 focus:outline-none"
@@ -152,7 +152,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714a2.25 2.25 0 001.5 2.25M9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75zm-.375 0h.008v.015h-.008V9.75zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75z" />
                             </svg>
-                        </button>
+                        </button> -->
                         <!-- Notificaciones de Chat -->
                         <div class="relative">
                             <a href="{{ route('chat.index') }}" class="relative w-10 h-10 rounded-full bg-gradient-to-r from-blue-500/80 to-purple-600/80 hover:from-blue-600 hover:to-purple-700 flex items-center justify-center text-white transition-all duration-300 shadow-md hover:shadow-lg hover:scale-110">

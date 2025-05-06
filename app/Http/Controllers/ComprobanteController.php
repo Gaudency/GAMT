@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Barryvdh\DomPDF\Facade\PDF;
+use Barryvdh\DomPDF\Facade\pdf as DomPDF;
 
 class ComprobanteController extends Controller
 {
@@ -436,7 +436,7 @@ class ComprobanteController extends Controller
 
             // Generar el PDF
             Log::info('Generando vista PDF');
-            $pdf = PDF::loadView('admin.comprobantes.report', [
+            $pdf = DomPDF::loadView('admin.comprobantes.report', [
                 'book' => $book,
                 'comprobantes' => $comprobantes,
                 'stats' => $stats,

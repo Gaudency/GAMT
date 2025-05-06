@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <title>Reporte de Comprobantes</title>
+    <title>Reporte de prestamos offline</title>
     <style>
         @page {
             margin: 0cm 0cm;
@@ -155,15 +155,13 @@
                     <span style="color: #dc3545; font-size: 40px;">◆</span>
                 </div>
             @endif
-
             <div class="header-text">
-                <h1>REPORTE DE COMPROBANTES</h1>
+                <h1>REPORTE DE PRESTAMOS OFFLINE</h1>
                 <p>Sistema de Gestión Documental</p>
                 @if(!empty($periodoTexto))
                     <p><strong>{{ $periodoTexto }}</strong></p>
                 @endif
             </div>
-
             @if($banderaExists)
                 <img src="{{ public_path('images/bandera.png') }}" class="header-logo-right" alt="Bandera">
             @else
@@ -172,7 +170,6 @@
                 </div>
             @endif
         </div>
-
         <!-- Estadísticas resumen -->
         <div class="estadisticas">
             <div class="estadistica-item">

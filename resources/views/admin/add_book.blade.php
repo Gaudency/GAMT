@@ -15,7 +15,7 @@
 <body class="bg-gray-100 dark:bg-gray-900 min-h-screen">
     @include('admin.header')
     @include('admin.sidebar')
-    <div class="flex min-h-screen">
+    <div class="flex-16 min-h-screen">
         <div class="w-full p-5">
             <div class="container mx-auto max-w-7xl">
                 <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg backdrop-blur-lg border border-gray-200 dark:border-gray-700">

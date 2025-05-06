@@ -138,7 +138,7 @@
                             <th class="px-4 py-3 bg-gray-100 dark:bg-gray-700 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider border-b-2 border-blue-500 dark:border-blue-400">TITULO</th>
                             <th class="px-4 py-3 bg-gray-100 dark:bg-gray-700 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider border-b-2 border-blue-500 dark:border-blue-400">UBICACION</th>
                             <th class="px-4 py-3 bg-gray-100 dark:bg-gray-700 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider border-b-2 border-blue-500 dark:border-blue-400">AÑO</th>
-                            <th class="px-4 py-3 bg-gray-100 dark:bg-gray-700 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider border-b-2 border-blue-500 dark:border-blue-400">TOMO</th>
+                            <th class="px-4 py-3 bg-gray-100 dark:bg-gray-700 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider border-b-2 border-blue-500 dark:border-blue-400">C.DIGITAL</th>
                             <th class="px-4 py-3 bg-gray-100 dark:bg-gray-700 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider border-b-2 border-blue-500 dark:border-blue-400">DESCRIPCION</th>
                             <th class="px-4 py-3 bg-gray-100 dark:bg-gray-700 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider border-b-2 border-blue-500 dark:border-blue-400">CATEGORIA</th>
                             <th class="px-4 py-3 bg-gray-100 dark:bg-gray-700 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider border-b-2 border-blue-500 dark:border-blue-400">N_HOJAS</th>
@@ -191,7 +191,7 @@
                                             <a href="{{ route('books.comprobantes.index', $book->id) }}"
                                                class="px-4 py-2 bg-gradient-to-r from-blue-500 via-white to-blue-500 hover:from-blue-600 hover:to-blue-600 text-blue-600 rounded-md inline-flex items-center transition duration-300 transform hover:scale-105">
                                                 <i class="fas fa-file-invoice mr-2"></i>
-                                                Comprobantes
+                                                G.C.
                                             </a>
                                         @endif
                                         <a onclick="confirmation(event)" href="{{url('book_delete',$book->id)}}"

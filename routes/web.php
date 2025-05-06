@@ -7,7 +7,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\AdminUserController;
-use App\Http\Controllers\searchController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\PerfilController;
 
 use App\Models\User;

@@ -68,25 +68,19 @@ class BackupController extends Controller
             $filename = 'backup-' . date('Y-m-d-H-i-s');
             $dumpFile = $backupPath . '/' . $filename . '.sql';
 
-            // Verificar que mysqldump existe
-            $mysqldumpPath = 'C:\xampp\mysql\bin\mysqldump.exe';
-            if (!file_exists($mysqldumpPath)) {
-                Log::error('mysqldump no encontrado en: ' . $mysqldumpPath);
-                throw new \Exception('No se encuentra la herramienta mysqldump. Verifica la instalación de MySQL.');
-            }
-
             // Log de la configuración
             Log::info('Configuración de backup:', [
                 'host' => $dbConfig['host'],
                 'port' => $dbConfig['port'],
                 'database' => $dbConfig['database'],
-                'mysqldump_path' => $mysqldumpPath
+                'mysqldump_command' => 'mysqldump' // Indicar que se usará el comando del sistema
             ]);
 
-            // Construir el comando mysqldump con ruta absoluta
+            // Construir el comando mysqldump usando el comando del sistema
+            // NOTA: Se asume que mysqldump está en el PATH del servidor Ubuntu
             $command = sprintf(
-                '"%s" --host=%s --port=%s --user=%s %s --result-file=%s %s',
-                $mysqldumpPath,
+                'mysqldump --host=%s --port=%s --user=%s %s --result-file=%s %s',
+                // No se pasa el path como primer argumento
                 escapeshellarg($dbConfig['host']),
                 escapeshellarg($dbConfig['port']),
                 escapeshellarg($dbConfig['username']),

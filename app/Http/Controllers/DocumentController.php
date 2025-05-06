@@ -10,7 +10,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 
-use Barryvdh\DomPDF\Facade\PDF;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class DocumentController extends Controller
 {
@@ -361,7 +361,7 @@ class DocumentController extends Controller
                     ]
                 ];
 
-                $pdf = PDF::loadView('admin.documents.comprobantesPDF', $data);
+                $pdf = Pdf::loadView('admin.documents.comprobantesPDF', $data);
                 return $pdf->stream('comprobantes-documento-'.$document->id.'.pdf');
             }
 
@@ -585,7 +585,7 @@ class DocumentController extends Controller
 
             // Cargar la vista PDF con manejo de errores
             try {
-                $pdf = PDF::loadView('admin.documents.generalPDF', $data);
+                $pdf = Pdf::loadView('admin.documents.generalPDF', $data);
 
                 // Generar el nombre del archivo
                 $filename = 'prestamo-general-' . $document->id . '-' . now()->format('dmY') . '.pdf';
