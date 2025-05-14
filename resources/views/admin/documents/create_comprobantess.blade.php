@@ -182,6 +182,15 @@
                                                 {{ Str::limit($comprobante->descripcion, 50) ?: 'Sin descripción' }}
                                             </div>
                                         </label>
+                                        <!-- Contenedor para la observación de préstamo -->
+                                        <div class="mt-2 observacion-prestamo-container hidden">
+                                            <label for="obs_prestamo_{{ $comprobante->id }}" class="text-xs text-gray-400 block mb-1">Observación Préstamo (opcional):</label>
+                                            <textarea name="observaciones_prestamo[{{ $comprobante->id }}]"
+                                                      id="obs_prestamo_{{ $comprobante->id }}"
+                                                      rows="2"
+                                                      class="w-full px-3 py-1.5 text-sm rounded-md border border-white/10 bg-gray-800/90 text-gray-200 focus:ring-blue-500/50 focus:border-blue-500/50"
+                                                      placeholder="Añadir observación para este comprobante..."></textarea>
+                                        </div>
                                     </div>
                                 @empty
                                     <div class="col-span-full text-center py-8 text-gray-400 italic">
@@ -351,6 +360,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         visibleItems.forEach(item => {
             item.querySelector('.comprobante-checkbox').checked = true;
+            // Mostrar campo de observación para los seleccionados
+            const obsContainer = item.querySelector('.observacion-prestamo-container');
+            if (obsContainer) obsContainer.classList.remove('hidden');
         });
 
         updateSelectedCount();
@@ -360,14 +372,31 @@ document.addEventListener('DOMContentLoaded', function() {
     deselectAllBtn.addEventListener('click', function() {
         comprobanteCheckboxes.forEach(checkbox => {
             checkbox.checked = false;
+            // Ocultar campo de observación para los deseleccionados
+            const item = checkbox.closest('.comprobante-item');
+            const obsContainer = item.querySelector('.observacion-prestamo-container');
+            if (obsContainer) {
+                obsContainer.classList.add('hidden');
+                obsContainer.querySelector('textarea').value = ''; // Limpiar al desmarcar
+            }
         });
 
         updateSelectedCount();
     });
 
-    // Actualizar contador cuando se selecciona/deselecciona
+    // Actualizar contador y mostrar/ocultar observación cuando se selecciona/deselecciona un comprobante individual
     comprobanteCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', updateSelectedCount);
+        checkbox.addEventListener('change', function() {
+            updateSelectedCount();
+            const item = this.closest('.comprobante-item');
+            const obsContainer = item.querySelector('.observacion-prestamo-container');
+            if (this.checked) {
+                obsContainer.classList.remove('hidden');
+            } else {
+                obsContainer.classList.add('hidden');
+                obsContainer.querySelector('textarea').value = ''; // Limpiar al desmarcar
+            }
+        });
     });
 
     // Validar y enviar formulario

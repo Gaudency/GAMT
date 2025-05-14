@@ -103,6 +103,7 @@
                                     <tr>
                                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">N° Comprobante</th>
                                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">N° Hojas</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Observaciones</th>
                                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">PDF</th>
                                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Estado</th>
                                         <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Acciones</th>
@@ -120,6 +121,12 @@
                                                        min="0">
                                             </div>
                     </td>
+                                        <td class="px-4 py-3">
+                                            <input type="text"
+                                                  class="observaciones-input w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition duration-300"
+                                                  value="{{ $comprobante->observaciones }}"
+                                                  placeholder="Observaciones...">
+                                        </td>
                                         <td class="px-4 py-3">
                                             <div class="pdf-container">
                         @if($comprobante->pdf_file)
@@ -258,6 +265,7 @@ $(document).ready(function() {
         const row = btn.closest('tr');
         const id = row.data('id');
         const hojasInput = row.find('.hojas-input');
+        const observacionesInput = row.find('.observaciones-input');
         const pdfInput = row.find('.pdf-input');
 
         // Validación básica
@@ -272,6 +280,7 @@ $(document).ready(function() {
         // Preparar datos
         const formData = new FormData();
         formData.append('n_hojas', hojasInput.val());
+        formData.append('observaciones', observacionesInput.val());
         formData.append('_method', 'PUT'); // Para simular PUT en Laravel
 
         if (pdfInput[0].files.length > 0) {

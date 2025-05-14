@@ -234,9 +234,10 @@
                     <th style="width: 9%;">N° Comprobante</th>
                     <th style="width: 12%;">Código</th>
                     <th style="width: 8%;">N° Hojas</th>
-                    <th style="width: 12%;">Costo (Bs)</th>
+                    <th style="width: 12%;">Devengado(Bs)</th>
                     <th style="width: 8%;">Estado</th>
-                    <th style="width: 35%;">Descripción</th>
+                    <th style="width: 25%;">Descripción</th>
+                    <th style="width: 10%;">Observaciones</th>
                     <th style="width: 8%;">PDF</th>
                     <th style="width: 14%;">Última Actualización</th>
                 </tr>
@@ -253,7 +254,8 @@
                             {{ ucfirst($comprobante->estado) }}
                         </span>
                     </td>
-                    <td style="word-wrap: break-word; word-break: break-all; max-width: 35%; height: auto; vertical-align: top; white-space: normal;">{{ $comprobante->descripcion ?: 'Sin descripción' }}</td>
+                    <td style="word-wrap: break-word; word-break: break-all; max-width: 25%; height: auto; vertical-align: top; white-space: normal;">{{ $comprobante->descripcion ?: 'Sin descripción' }}</td>
+                    <td style="word-wrap: break-word; word-break: break-all; max-width: 10%; height: auto; vertical-align: top; white-space: normal;">{{ $comprobante->observaciones ?: '-' }}</td>
                     <td style="text-align: center;">
                         {{ $comprobante->pdf_file ? 'Sí' : 'No' }}
                     </td>

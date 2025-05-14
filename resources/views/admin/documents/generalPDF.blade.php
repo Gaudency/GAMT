@@ -257,20 +257,22 @@
     <div class="document-details">
         <h3 style="background-color: #1e40af; color: white; padding: 8px; margin-top: 0;">Detalles del Préstamo</h3>
 
-        <table class="table">
+        <table class="table" style="table-layout: fixed; width: 100%;">
             <tr>
-                <th>N° Hojas</th>
-                <th>N° Carpeta</th>
-                <th>Folios</th>
-                <th>Tipo de Préstamo</th>
-                <th>Observaciones</th>
+                <th style="width: 10%;">N° Hojas</th>
+                <th style="width: 15%;">N° Carpeta</th>
+                <th style="width: 15%;">Folios(totales)</th>
+                <th style="width: 15%;">Tipo de Préstamo</th>
+                <th style="width: 22%;">Obs. Préstamo (Descripción)</th>
+                <th style="width: 23%;">Obs. Devolución General</th>
             </tr>
             <tr>
-                <td style="text-align: center;">{{ $document['N_hojas'] ?? 'No especificado' }}</td>
-                <td style="text-align: center;">{{ $document['N_carpeta'] ?? 'No especificado' }}</td>
-                <td style="text-align: center;">{{ $document['folios'] ?? 'No especificado' }}</td>
-                <td style="text-align: center;">{{ $document['loan_type'] ?? 'Estándar' }}</td>
-                <td>{{ $document['observaciones'] ?? 'Sin observaciones' }}</td>
+                <td style="text-align: center; word-wrap: break-word;">{{ $document['N_hojas'] ?? 'No especificado' }}</td>
+                <td style="text-align: center; word-wrap: break-word;">{{ $document['N_carpeta'] ?? 'No especificado' }}</td>
+                <td style="text-align: center; word-wrap: break-word;">{{ $book['N_hojas'] ?? 'No especificado' }}</td>
+                <td style="text-align: center; word-wrap: break-word;">{{ $document['loan_type'] ?? 'Estándar' }}</td>
+                <td style="word-wrap: break-word;">{{ $document['descripcion'] ?? 'Sin observaciones' }}</td>
+                <td style="word-wrap: break-word;">{{ $document['observacion_devolucion_general'] ?? 'Sin observaciones' }}</td>
             </tr>
         </table>
     </div>

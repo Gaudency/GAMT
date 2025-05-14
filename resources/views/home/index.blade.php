@@ -206,12 +206,12 @@
           <!-- Redes Sociales -->
           <div class="flex justify-center space-x-6 items-center mt-4">
             <!-- Sitio Web -->
-            <a href="#" class="text-blue-400 hover:text-blue-300 transition-colors transform hover:scale-110 duration-300">
+            <a href="https://gamtomave.gob.bo/" class="text-blue-400 hover:text-blue-300 transition-colors transform hover:scale-110 duration-300">
               <i class="fas fa-globe text-xl"></i>
             </a>
 
             <!-- Facebook -->
-            <a href="#" class="text-blue-500 hover:text-blue-400 transition-colors transform hover:scale-110 duration-300">
+            <a href="https://www.facebook.com/GAMTOMAVE2025" class="text-blue-500 hover:text-blue-400 transition-colors transform hover:scale-110 duration-300">
               <i class="fab fa-facebook-f text-xl"></i>
             </a>
 
@@ -226,12 +226,12 @@
             </a>
 
             <!-- WhatsApp -->
-            <a href="#" class="text-green-400 hover:text-green-300 transition-colors transform hover:scale-110 duration-300">
+            <a href="https://wa.me/59167900876" class="text-green-400 hover:text-green-300 transition-colors transform hover:scale-110 duration-300">
               <i class="fab fa-whatsapp text-xl"></i>
             </a>
 
             <!-- TikTok -->
-            <a href="#" class="text-white hover:text-gray-200 transition-colors transform hover:scale-110 duration-300">
+            <a href="http://www.tiktok.com/@gam_tomave" class="text-white hover:text-gray-200 transition-colors transform hover:scale-110 duration-300">
               <i class="fab fa-tiktok text-xl"></i>
             </a>
           </div>

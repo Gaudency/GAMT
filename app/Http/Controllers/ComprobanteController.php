@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Barryvdh\DomPDF\Facade\pdf as DomPDF;
+use Barryvdh\DomPDF\Facade\Pdf as DomPDF;
 
 class ComprobanteController extends Controller
 {
@@ -38,7 +38,8 @@ class ComprobanteController extends Controller
             'codigo_personalizado' => 'nullable|string|max:255',
             'costo' => 'nullable|numeric|min:0',
             'pdf_file' => 'nullable|mimes:pdf|max:50000',
-            'descripcion' => 'nullable|string|max:1000'
+            'descripcion' => 'nullable|string|max:1000',
+            'observaciones' => 'nullable|string|max:1000'
         ]);
 
         $inicio = $request->comprobante_inicio;
@@ -51,7 +52,8 @@ class ComprobanteController extends Controller
             $fin,
             $n_hojas,
             $request->descripcion,
-            $request->costo
+            $request->costo,
+            $request->observaciones
         );
 
         if (!$resultado['success']) {
@@ -128,12 +130,14 @@ class ComprobanteController extends Controller
             'codigo_personalizado' => 'nullable|string|max:255',
             'costo' => 'nullable|numeric|min:0',
             'pdf_file' => 'nullable|mimes:pdf|max:50000',
-            'descripcion' => 'nullable|string|max:1000'
+            'descripcion' => 'nullable|string|max:1000',
+            'observaciones' => 'nullable|string|max:1000'
         ]);
 
         $comprobante->n_hojas = $request->n_hojas;
         $comprobante->estado = $request->estado;
         $comprobante->descripcion = $request->descripcion;
+        $comprobante->observaciones = $request->observaciones;
         $comprobante->codigo_personalizado = $request->codigo_personalizado;
         $comprobante->costo = $request->costo;
 
@@ -206,6 +210,7 @@ class ComprobanteController extends Controller
                     'numero_comprobante' => $comprobante->numero_comprobante,
                     'n_hojas' => $comprobante->n_hojas,
                     'descripcion' => $comprobante->descripcion ?? 'Sin descripción',
+                    'observaciones' => $comprobante->observaciones,
                     'pdf_file' => $comprobante->pdf_file,
                     'estado' => $comprobante->pivot->estado ?? 'prestado',
                     'fecha_prestamo' => $comprobante->pivot->fecha_prestamo,
@@ -335,7 +340,7 @@ class ComprobanteController extends Controller
     /**
      * Crear un rango de comprobantes para un libro
      */
-    public function crearRangoComprobantes($bookId, $inicio, $fin, $n_hojas = 0, $descripcion = null, $costo = null)
+    public function crearRangoComprobantes($bookId, $inicio, $fin, $n_hojas = 0, $descripcion = null, $costo = null, $observaciones = null)
     {
         try {
             DB::beginTransaction();
@@ -363,6 +368,7 @@ class ComprobanteController extends Controller
                     'n_hojas' => $n_hojas,
                     'estado' => 'activo',
                     'descripcion' => $descripcion,
+                    'observaciones' => $observaciones,
                     'costo' => $costo
                 ]);
             }

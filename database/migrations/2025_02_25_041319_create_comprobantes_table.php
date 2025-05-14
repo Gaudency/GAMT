@@ -18,6 +18,7 @@ return new class extends Migration
             $table->integer('n_hojas');            // Número de hojas del comprobante individual
             $table->string('pdf_file')->nullable(); // PDF específico del comprobante
             $table->text('descripcion')->nullable(); // Descripción del comprobante
+            $table->text('observaciones')->nullable(); // Campo para observaciones adicionales
             $table->enum('estado', ['activo', 'inactivo'])->default('activo'); // Información adicional específica
             $table->timestamps();
         });

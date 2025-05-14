@@ -138,8 +138,9 @@
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">N° Comprobante</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Código</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">N° Hojas</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Costo</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">devengado</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Descripción</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Observaciones</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">PDF</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Estado</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">Última Actualización</th>
@@ -169,6 +170,18 @@
                                         </div>
                                     @else
                                         {{ $comprobante->descripcion ?: 'Sin descripción' }}
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+                                    @if($comprobante->observaciones && strlen($comprobante->observaciones) > 30)
+                                        <div class="relative group">
+                                            <span class="tooltip-trigger cursor-help">{{ substr($comprobante->observaciones, 0, 30) }}...</span>
+                                            <div class="absolute z-10 w-64 p-2 bg-white dark:bg-gray-800 rounded shadow-lg border border-gray-200 dark:border-gray-700 text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none -mt-1 left-0">
+                                                {{ $comprobante->observaciones }}
+                                            </div>
+                                        </div>
+                                    @else
+                                        {{ $comprobante->observaciones ?: '-' }}
                                     @endif
                                 </td>
                                 <td class="px-4 py-3 text-sm">
@@ -505,6 +518,16 @@ function viewComprobanteDetails(comprobanteId) {
                         </h5>
                         <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 shadow-md">
                             <p class="text-gray-700 dark:text-gray-300">${comprobante.descripcion}</p>
+                        </div>
+                    </div>
+                ` : ''}
+                ${comprobante.observaciones ? `
+                    <div class="mt-6">
+                        <h5 class="text-base font-semibold text-gray-800 dark:text-gray-200 flex items-center mb-3">
+                            <i class="fas fa-clipboard-list mr-2"></i> Observaciones
+                        </h5>
+                        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 shadow-md">
+                            <p class="text-gray-700 dark:text-gray-300">${comprobante.observaciones}</p>
                         </div>
                     </div>
                 ` : ''}

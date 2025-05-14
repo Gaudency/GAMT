@@ -305,10 +305,12 @@
                 <tr>
                     <th style="width: 8%;">N° Comprobante</th>
                     <th style="width: 8%;">N° Hojas</th>
-                    <th style="width: 35%;">Descripción</th>
+                    <th style="width: 25%;">Descripción</th>
                     <th style="width: 8%;">Estado</th>
+                    <th style="width: 15%;">Obs. Préstamo</th>
                     <th style="width: 10%;">Fecha Préstamo</th>
-                    <th style="width: 10%;">Devolución</th>
+                    <th style="width: 15%;">Obs. Devolución</th>
+                    <th style="width: 10%;">Fecha Devolución</th>
                     <th style="width: 9%;">PDF</th>
                 </tr>
             </thead>
@@ -317,7 +319,7 @@
                 <tr>
                     <td style="text-align: center;">{{ $comprobante['numero_comprobante'] }}</td>
                     <td style="text-align: center;">{{ $comprobante['n_hojas'] }}</td>
-                    <td style="word-wrap: break-word; word-break: break-all; max-width: 35%; vertical-align: top; white-space: normal; padding: 8px;">
+                    <td style="word-wrap: break-word; word-break: break-all; max-width: 25%; vertical-align: top; white-space: normal; padding: 8px;">
                         {{ $comprobante['descripcion'] ?: 'Sin descripción' }}
                     </td>
                     <td style="text-align: center;">
@@ -325,8 +327,10 @@
                             {{ ucfirst($comprobante['estado']) }}
                         </span>
                     </td>
-                    <td style="text-align: center;">{{ $comprobante['fecha_prestamo'] }}</td>
-                    <td style="text-align: center;">{{ $comprobante['fecha_devolucion'] ?: 'Pendiente' }}</td>
+                    <td style="word-wrap: break-word; word-break: break-all; max-width: 15%; vertical-align: top; white-space: normal; padding: 8px;">{{ $comprobante['observaciones_prestamo'] ?: '-' }}</td>
+                    <td style="text-align: center;">{{ $comprobante['fecha_prestamo'] ? date('d/m/Y H:i', strtotime($comprobante['fecha_prestamo'])) : '-' }}</td>
+                    <td style="word-wrap: break-word; word-break: break-all; max-width: 15%; vertical-align: top; white-space: normal; padding: 8px;">{{ $comprobante['observaciones_devolucion'] ?: '-' }}</td>
+                    <td style="text-align: center;">{{ $comprobante['fecha_devolucion'] ? date('d/m/Y H:i', strtotime($comprobante['fecha_devolucion'])) : 'Pendiente' }}</td>
                     <td style="text-align: center;">{{ isset($comprobante['pdf_file']) && $comprobante['pdf_file'] ? 'Sí' : 'No' }}</td>
                 </tr>
                 @endforeach

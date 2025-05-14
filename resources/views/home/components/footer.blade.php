@@ -22,31 +22,50 @@
         <!-- Enlaces adicionales y redes sociales -->
         <div class="mt-8 pt-6 border-t border-white/10">
             <div class="flex flex-col items-center space-y-6">
-                <!-- Enlaces -->
+               <!-- Enlaces -->
                 <div class="flex flex-wrap justify-center gap-6">
-                    <a href="#" class="text-white/80 hover:text-white transition-colors duration-300">
+                    <!-- Acerca de -->
+                    <a href="#" class="relative group text-white/80 hover:text-white transition-colors duration-300">
                         <i class="fas fa-info-circle mr-1"></i> Acerca de
+                        <span class="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-sm rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            Más información sobre nosotros GAMT
+                        </span>
                     </a>
-                    <a href="#" class="text-white/80 hover:text-white transition-colors duration-300">
+
+                    <!-- Contacto -->
+                    <a href="#" class="relative group text-white/80 hover:text-white transition-colors duration-300">
                         <i class="fas fa-envelope mr-1"></i> Contacto
+                        <span class="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-sm rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            Contáctanos para más detalles WhatsApp
+                        </span>
                     </a>
-                    <a href="#" class="text-white/80 hover:text-white transition-colors duration-300">
+
+                    <!-- Privacidad -->
+                    <a href="#" class="relative group text-white/80 hover:text-white transition-colors duration-300">
                         <i class="fas fa-shield-alt mr-1"></i> Privacidad
+                        <span class="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-sm rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            Consulta nuestra política de privacidad dentro las instalaciones
+                        </span>
                     </a>
-                    <a href="#" class="text-white/80 hover:text-white transition-colors duration-300">
+
+                    <!-- Términos -->
+                    <a href="no hay terminos" class="relative group text-white/80 hover:text-white transition-colors duration-300">
                         <i class="fas fa-file-alt mr-1"></i> Términos
+                        <span class="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-sm rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            Lee nuestros términos y condiciones del GAMT
+                        </span>
                     </a>
                 </div>
 
                 <!-- Redes Sociales -->
                 <div class="flex space-x-6 items-center">
                     <!-- Sitio Web -->
-                    <a href="#" class="text-blue-400 hover:text-blue-300 transition-colors transform hover:scale-110 duration-300">
+                    <a href="https://gamtomave.gob.bo/" class="text-blue-400 hover:text-blue-300 transition-colors transform hover:scale-110 duration-300">
                         <i class="fas fa-globe text-xl"></i>
                     </a>
 
                     <!-- Facebook -->
-                    <a href="#" class="text-blue-500 hover:text-blue-400 transition-colors transform hover:scale-110 duration-300">
+                    <a href="https://www.facebook.com/GAMTOMAVE2025" class="text-blue-500 hover:text-blue-400 transition-colors transform hover:scale-110 duration-300">
                         <i class="fab fa-facebook-f text-xl"></i>
                     </a>
 
@@ -61,14 +80,18 @@
                     </a>
 
                     <!-- WhatsApp -->
-                    <a href="#" class="text-green-400 hover:text-green-300 transition-colors transform hover:scale-110 duration-300">
+                    <a href="https://wa.me/59167900876" class="text-green-400 hover:text-green-300 transition-colors transform hover:scale-110 duration-300">
                         <i class="fab fa-whatsapp text-xl"></i>
                     </a>
 
                     <!-- TikTok -->
-                    <a href="#" class="text-white hover:text-gray-200 transition-colors transform hover:scale-110 duration-300">
+                    <a href="http://www.tiktok.com/@gam_tomave" class="text-white hover:text-gray-200 transition-colors transform hover:scale-110 duration-300">
                         <i class="fab fa-tiktok text-xl"></i>
                     </a>
+                     <!-- Correo Electrónico -->
+                    <a href="mailto:gob.aut.mun.tomave@gmail.com" class="text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 transition-colors duration-300">
+                    <i class="fas fa-envelope text-lg"></i>
+                </a>
                 </div>
             </div>
         </div>

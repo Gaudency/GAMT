@@ -8,12 +8,12 @@
             </div>
             <div class="flex space-x-4">
                 <!-- Sitio Web -->
-                <a href="#" class="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-300">
+                <a href="https://gamtomave.gob.bo/" class="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-300">
                     <i class="fas fa-globe text-lg"></i>
                 </a>
 
                 <!-- Facebook -->
-                <a href="#" class="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-300">
+                <a href="https://www.facebook.com/GAMTOMAVE2025" class="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-300">
                     <i class="fab fa-facebook-f text-lg"></i>
                 </a>
 
@@ -28,13 +28,17 @@
                 </a>
 
                 <!-- WhatsApp -->
-                <a href="#" class="text-green-500 hover:text-green-600 dark:text-green-400 dark:hover:text-green-300 transition-colors duration-300">
+                <a href="https://wa.me/59167900876" class="text-green-500 hover:text-green-600 dark:text-green-400 dark:hover:text-green-300 transition-colors duration-300">
                     <i class="fab fa-whatsapp text-lg"></i>
                 </a>
 
                 <!-- TikTok -->
-                <a href="#" class="text-gray-800 hover:text-black dark:text-gray-200 dark:hover:text-white transition-colors duration-300">
+                <a href="http://www.tiktok.com/@gam_tomave" class="text-gray-800 hover:text-black dark:text-gray-200 dark:hover:text-white transition-colors duration-300">
                     <i class="fab fa-tiktok text-lg"></i>
+                </a>
+                <!-- Correo Electrónico -->
+                <a href="mailto:gob.aut.mun.tomave@gmail.com" class="text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 transition-colors duration-300">
+                    <i class="fas fa-envelope text-lg"></i>
                 </a>
             </div>
         </div>

@@ -196,6 +196,22 @@
                                 @enderror
                             </div>
 
+                            <div class="mb-5">
+                                <label for="observaciones" class="block text-gray-700 dark:text-gray-200 mb-2 font-medium">
+                                    Observaciones (opcional)
+                                </label>
+                                <textarea class="w-full px-4 py-2.5 bg-white dark:bg-gray-800 border @error('observaciones') border-red-500 @else border-gray-300 dark:border-gray-600 @enderror text-gray-800 dark:text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition duration-300 min-h-[100px]"
+                                          id="observaciones"
+                                          name="observaciones"
+                                          placeholder="Ingrese observaciones adicionales para los comprobantes">{{ old('observaciones') }}</textarea>
+                                <small class="block text-gray-500 dark:text-gray-400 text-xs mt-2">
+                                    Información adicional como "Este comprobante no tiene todo el monto ajustado en el presupuesto del 2024"
+                                </small>
+                                @error('observaciones')
+                                    <div class="text-red-600 dark:text-red-400 text-sm mt-1">{{ $message }}</div>
+                                @enderror
+                            </div>
+
                             <div>
                                 <label for="pdf_file" class="block text-gray-700 dark:text-gray-200 mb-2 font-medium">
                                     Archivo PDF (opcional)

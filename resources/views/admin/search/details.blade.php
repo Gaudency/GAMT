@@ -185,20 +185,30 @@
 
                                         <div id="comprobantesSelector" class="hidden mb-4">
                                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                                Seleccionar Comprobantes
+                                                Seleccionar Comprobantes y Añadir Observaciones (Opcional)
                                             </label>
-                                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                            <div class="max-h-60 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 space-y-4">
                                                 @foreach($book->comprobantes as $comprobante)
-                                                    <div class="flex items-center space-x-2">
-                                                        <input type="checkbox"
-                                                               name="comprobantes[]"
-                                                               value="{{ $comprobante->id }}"
-                                                               id="comp_{{ $comprobante->id }}"
-                                                               class="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500">
-                                                        <label for="comp_{{ $comprobante->id }}" class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                                            Comprobante #{{ $comprobante->numero_comprobante }}
-                                                            <span class="text-xs text-gray-500 dark:text-gray-400">({{ $comprobante->n_hojas }} hojas)</span>
-                                                        </label>
+                                                    <div class="comprobante-item">
+                                                        <div class="flex items-center space-x-2">
+                                                            <input type="checkbox"
+                                                                   name="comprobantes[]"
+                                                                   value="{{ $comprobante->id }}"
+                                                                   id="comp_{{ $comprobante->id }}"
+                                                                   class="comprobante-checkbox w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500">
+                                                            <label for="comp_{{ $comprobante->id }}" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                                Comprobante #{{ $comprobante->numero_comprobante }}
+                                                                <span class="text-xs text-gray-500 dark:text-gray-400">({{ $comprobante->n_hojas }} hojas)</span>
+                                                            </label>
+                                                        </div>
+                                                        <div class="mt-2 ml-6 observacion-prestamo-container hidden">
+                                                            <label for="obs_prestamo_{{ $comprobante->id }}" class="text-xs text-gray-600 dark:text-gray-400 block mb-1">Observación Préstamo:</label>
+                                                            <textarea name="observaciones_prestamo[{{ $comprobante->id }}]"
+                                                                      id="obs_prestamo_{{ $comprobante->id }}"
+                                                                      rows="2"
+                                                                      class="w-full px-3 py-1.5 text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-blue-500 focus:border-blue-500"
+                                                                      placeholder="Añadir observación para este comprobante..."></textarea>
+                                                        </div>
                                                     </div>
                                                 @endforeach
                                             </div>
@@ -313,6 +323,19 @@
         } else {
             comprobantesSelector.classList.add('hidden');
         }
+    });
+
+    // Script para mostrar/ocultar textareas de observación
+    document.querySelectorAll('.comprobante-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const container = this.closest('.comprobante-item').querySelector('.observacion-prestamo-container');
+            if (this.checked) {
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+                container.querySelector('textarea').value = ''; // Limpiar si se desmarca
+            }
+        });
     });
     </script>
 </body>

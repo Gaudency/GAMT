@@ -19,6 +19,7 @@ class Comprobante extends Model
         'n_hojas',
         'pdf_file',
         'descripcion',
+        'observaciones',
         'costo',
         'estado'
     ];

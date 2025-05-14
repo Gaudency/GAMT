@@ -23,6 +23,7 @@ class Document extends Model
         'status',
         'fecha_prestamo',
         'fecha_devolucion',
+        'observacion_devolucion_general',
         'category_id',
         'user_id'
     ];
@@ -62,7 +63,7 @@ class Document extends Model
     public function comprobantes()
     {
         return $this->belongsToMany(Comprobante::class, 'document_comprobante', 'document_id', 'comprobante_id')
-                    ->withPivot('estado', 'fecha_prestamo', 'fecha_devolucion')
+                    ->withPivot('estado', 'fecha_prestamo', 'fecha_devolucion', 'observaciones_prestamo', 'observaciones_devolucion')
                     ->withTimestamps();
     }
 

@@ -10,7 +10,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 
-use Barryvdh\DomPDF\Facade\Pdf;
+use Barryvdh\DomPDF\Facade\Pdf as DomPDF;
 
 class DocumentController extends Controller
 {
@@ -54,7 +54,9 @@ class DocumentController extends Controller
                 'fecha_devolucion' => 'required|date|after_or_equal:today',
                 'N_hojas' => 'nullable|string',
                 'N_carpeta' => 'nullable|string',
-                'description' => 'nullable|string'
+                'description' => 'nullable|string',
+                'observaciones_prestamo' => 'nullable|array',
+                'observaciones_prestamo.*' => 'nullable|string|max:65535'
             ]);
 
             $book = Book::find($request->book_id);
@@ -82,9 +84,11 @@ class DocumentController extends Controller
             } else {
                 // Préstamo de comprobantes individuales
                 foreach ($request->comprobantes as $comprobante_id) {
+                    $observacion = $request->observaciones_prestamo[$comprobante_id] ?? null;
                     $document->comprobantes()->attach($comprobante_id, [
                         'fecha_prestamo' => now()->format('Y-m-d H:i:s'),
-                        'estado' => 'prestado'
+                        'estado' => 'prestado',
+                        'observaciones_prestamo' => $observacion
                     ]);
 
                     Comprobante::where('id', $comprobante_id)
@@ -169,33 +173,60 @@ class DocumentController extends Controller
     public function updateLoan(Request $request, Document $document)
     {
         $request->validate([
-            'status' => 'required|in:' . self::STATUS_PRESTADO . ',' . self::STATUS_DEVUELTO
+            'status' => 'required|in:' . self::STATUS_PRESTADO . ',' . self::STATUS_DEVUELTO,
+            'observacion_devolucion_general' => 'nullable|string|max:65535'
         ]);
 
         try {
+            $dataToUpdate = [
+                'status' => $request->status
+            ];
+
             if ($request->status === self::STATUS_DEVUELTO) {
-                $document->update([
-                    'status' => self::STATUS_DEVUELTO,
-                    'fecha_devolucion' => Carbon::now()
-                ]);
+                $dataToUpdate['fecha_devolucion'] = Carbon::now();
+                // Guardar la observación de devolución general si se proporciona
+                if ($request->filled('observacion_devolucion_general')) {
+                    $dataToUpdate['observacion_devolucion_general'] = $request->observacion_devolucion_general;
+                }
 
-                // Actualizar estado del libro
-                $document->book->update(['estado' => Book::ESTADO_NO_PRESTADO]);
+                $document->update($dataToUpdate);
 
-                // Si hay comprobantes prestados, marcarlos como devueltos
+                // Actualizar estado del libro solo si el préstamo es de tipo carpeta completa
+                // (no tiene comprobantes individuales asociados o es explícitamente general)
+                // Esta lógica asume que un préstamo general no tendrá registros en la tabla pivote document_comprobante
+                if ($document->comprobantes()->count() == 0) { // O una condición más explícita si tienes un campo tipo_prestamo en Document
+                    $document->book->update(['estado' => Book::ESTADO_NO_PRESTADO]);
+                }
+
+                // Si es un préstamo de comprobantes y todos han sido devueltos individualmente,
+                // el estado del libro ya se maneja en returnComprobante.
+                // Si es un préstamo de carpeta completa, y tenía comprobantes (aunque no se gestionen individualmente en este flujo),
+                // los marcamos como activos.
+                // Esta parte puede necesitar ajuste según la lógica exacta de cómo se marcan los comprobantes de una carpeta completa.
+                if ($document->comprobantes()->count() > 0 && !$document->book->isComprobanteTipo()) {
+                     $document->book->comprobantes()->update(['estado' => 'activo']);
+                }
+
+
+                // Marcar comprobantes individuales del préstamo como devueltos (si los tuviera y se maneja así)
+                // Esta parte es redundante si la devolución de comprobantes individuales se hace por separado.
+                // Se mantiene por si acaso un préstamo general pudiera tener comprobantes asociados directamente.
                 $document->comprobantes()
                         ->wherePivot('estado', 'prestado')
                         ->each(function($comprobante) use ($document) {
                             $document->comprobantes()->updateExistingPivot($comprobante->id, [
                                 'estado' => 'devuelto',
                                 'fecha_devolucion' => Carbon::now()->format('Y-m-d H:i:s')
+                                // Aquí no se actualiza la observación_devolucion del pivote, ya que es general
                             ]);
+                            // Re-activar el comprobante maestro
                             $comprobante->update(['estado' => 'activo']);
                         });
 
                 $message = 'Carpeta marcada como devuelta';
             } else {
-                $document->update(['status' => $request->status]);
+                // Para otros cambios de estado (ej. a Prestado, aunque este flujo es más para devolver)
+                $document->update($dataToUpdate);
                 $message = 'Estado actualizado correctamente';
             }
 
@@ -271,168 +302,151 @@ class DocumentController extends Controller
 
     public function getComprobantes(Document $document, Request $request)
     {
+        Log::info("Obteniendo comprobantes para documento: {$document->id}");
+
         try {
-            Log::info('Obteniendo comprobantes para documento: ' . $document->id);
-            Log::info('Formato solicitado: ' . ($request->format ?? 'no especificado'));
+            $document->load('comprobantes');
 
-            // Cargar el documento con sus relaciones
-            $document->load(['book', 'comprobantes', 'user']);
-
+            // Mapear comprobantes para incluir información de la tabla pivot
             $comprobantes = $document->comprobantes->map(function($comprobante) {
-                // Convertir y formatear las fechas manualmente
-                $fecha_prestamo_obj = null;
-                $fecha_prestamo_formateada = null;
-                if (!empty($comprobante->pivot->fecha_prestamo)) {
-                    try {
-                        $fecha_prestamo_obj = Carbon::parse($comprobante->pivot->fecha_prestamo);
-                        $fecha_prestamo_formateada = $fecha_prestamo_obj->format('Y-m-d H:i:s');
-                    } catch (\Exception $e) {
-                        Log::error('Error al parsear fecha_prestamo: ' . $e->getMessage());
-                    }
+                $pivotData = $comprobante->pivot;
+                $fechaPrestamoOriginal = $pivotData->fecha_prestamo;
+                Log::info("Fecha préstamo original: {$fechaPrestamoOriginal}");
+                try {
+                    $fechaPrestamoFormateada = $fechaPrestamoOriginal ? Carbon::parse($fechaPrestamoOriginal)->format('Y-m-d H:i:s') : null;
+                    Log::info("Fecha préstamo formateada: {$fechaPrestamoFormateada}");
+                } catch (\Exception $e) {
+                    Log::warning("Error al parsear fecha_prestamo: {$fechaPrestamoOriginal} - Error: {$e->getMessage()}");
+                    $fechaPrestamoFormateada = 'Fecha inválida';
                 }
-
-                $fecha_devolucion_obj = null;
-                $fecha_devolucion_formateada = null;
-                if (!empty($comprobante->pivot->fecha_devolucion)) {
-                    try {
-                        $fecha_devolucion_obj = Carbon::parse($comprobante->pivot->fecha_devolucion);
-                        $fecha_devolucion_formateada = $fecha_devolucion_obj->format('Y-m-d H:i:s');
-                    } catch (\Exception $e) {
-                        Log::error('Error al parsear fecha_devolucion: ' . $e->getMessage());
-                    }
-                }
-
-                // Log para depuración
-                Log::info('Fecha préstamo original: ' . $comprobante->pivot->fecha_prestamo);
-                Log::info('Fecha préstamo formateada: ' . $fecha_prestamo_formateada);
 
                 return [
                     'id' => $comprobante->id,
                     'numero_comprobante' => $comprobante->numero_comprobante,
                     'n_hojas' => $comprobante->n_hojas,
                     'descripcion' => $comprobante->descripcion ?? 'Sin descripción',
+                    'observaciones_prestamo' => $pivotData->observaciones_prestamo,
+                    'observaciones_devolucion' => $pivotData->observaciones_devolucion,
                     'pdf_file' => $comprobante->pdf_file,
-                    'estado' => $comprobante->pivot->estado ?? 'prestado',
-                    'fecha_prestamo' => $fecha_prestamo_formateada,
-                    'fecha_devolucion' => $fecha_devolucion_formateada
+                    'estado' => $pivotData->estado ?? 'prestado',
+                    'fecha_prestamo' => $fechaPrestamoFormateada,
+                    'fecha_devolucion' => $pivotData->fecha_devolucion ? Carbon::parse($pivotData->fecha_devolucion)->format('Y-m-d H:i:s') : null
                 ];
             });
 
-            // Estadísticas útiles
-            $stats = [
-                'total' => $comprobantes->count(),
-                'prestados' => $comprobantes->where('estado', 'prestado')->count(),
-                'devueltos' => $comprobantes->where('estado', 'devuelto')->count(),
-                'vencidos' => $comprobantes->where('estado', 'prestado')
-                    ->filter(function($comp) use ($document) {
-                        return Carbon::parse($document->fecha_devolucion)->isPast();
-                    })->count()
-            ];
+            Log::info("Comprobantes encontrados: " . $comprobantes->count());
 
-            Log::info('Comprobantes encontrados: ' . $comprobantes->count());
+            $format = $request->input('format', 'json');
+            Log::info("Formato solicitado: {$format}");
 
-            // Verificar si se solicita formato PDF de manera explícita
-            if ($request->has('format') && $request->format == 'pdf') {
-                Log::info('Generando PDF para documento: ' . $document->id);
+            if ($format === 'pdf') {
+                Log::info("Generando PDF para documento: {$document->id}");
 
-                $data = [
-                    'document' => $document,
-                    'comprobantes' => $comprobantes,
-                    'stats' => $stats,
-                    'book' => [
-                        'title' => $document->book->title,
-                        'code' => $document->book->N_codigo,
-                        'year' => $document->book->year,
-                        'tomo' => $document->book->tomo,
-                        'ubicacion' => $document->book->ubicacion ?? 'No especificada',
-                        'image' => $document->book->book_img ?? null
-                    ],
-                    'prestamo' => [
-                        'solicitante' => $document->applicant_name ?? 'No especificado',
-                        'estado' => $document->status ?? 'No especificado',
-                        'fecha_prestamo' => $document->fecha_prestamo ?
-                            'Fecha: ' . date('d/m/Y', strtotime($document->fecha_prestamo)) . ' - Hora: ' . date('H:i:s', strtotime($document->fecha_prestamo)) :
-                            'Fecha: ' . date('d/m/Y') . ' - Hora: ' . date('H:i:s'),
-                        'fecha_devolucion' => $document->fecha_devolucion ?
-                            'Fecha: ' . date('d/m/Y', strtotime($document->fecha_devolucion)) . ' - Hora: ' . date('H:i:s', strtotime($document->fecha_devolucion)) :
-                            null,
-                        'administrador' => $document->user_id ? ($document->user->name ?? 'Usuario #'.$document->user_id) :
-                            (auth()->check() ? auth()->user()->name : 'Sistema')
-                    ]
+                // Preparar datos específicos para el PDF de comprobantes
+                $document->load(['book', 'user']); // Asegurar que book y user están cargados
+
+                $prestamoData = [
+                    'solicitante' => $document->applicant_name ?? 'No disponible',
+                    'estado' => $document->status ?? 'No disponible',
+                    'fecha_prestamo' => $document->fecha_prestamo ? $document->fecha_prestamo->format('d/m/Y H:i:s') : 'No disponible',
+                    'fecha_devolucion' => $document->fecha_devolucion ? $document->fecha_devolucion->format('d/m/Y H:i:s') : 'Pendiente',
+                    'administrador' => $document->user->name ?? 'Sistema'
                 ];
 
-                $pdf = Pdf::loadView('admin.documents.comprobantesPDF', $data);
-                return $pdf->stream('comprobantes-documento-'.$document->id.'.pdf');
+                $bookData = [
+                    'title' => $document->book->title ?? 'No disponible',
+                    'code' => $document->book->N_codigo ?? 'No disponible',
+                    'year' => $document->book->year ?? 'No disponible',
+                    'tomo' => $document->book->tomo ?? 'No disponible',
+                    'ubicacion' => $document->book->ubicacion ?? 'No especificada',
+                    'image' => $document->book->book_img ?? null
+                ];
+
+                 // Calcular estadísticas para el PDF
+                $statsData = [
+                    'total' => $comprobantes->count(),
+                    'prestados' => $comprobantes->where('estado', 'prestado')->count(),
+                    'devueltos' => $comprobantes->where('estado', 'devuelto')->count(),
+                    // Simplificado, la lógica de vencidos podría ser más compleja si se necesita
+                    'vencidos' => $comprobantes->where('estado', 'prestado')
+                                        ->whereNotNull('fecha_devolucion') // Necesitaríamos la fecha de vencimiento real
+                                        ->count() // Placeholder, ajustar si hay fecha de vencimiento
+                ];
+
+
+                $data = [
+                    'prestamo' => $prestamoData,
+                    'book' => $bookData,
+                    'comprobantes' => $comprobantes->toArray(), // Convertir a array para la vista
+                    'stats' => $statsData,
+                    'fecha_generacion' => Carbon::now()->format('d/m/Y H:i:s')
+                ];
+
+                try {
+                    $pdf = DomPDF::loadView('admin.documents.comprobantesPDF', $data);
+                    return $pdf->stream('comprobantes-prestamo-'.$document->id.'.pdf');
+                } catch (\Exception $e) {
+                    Log::error("Error al generar la vista PDF comprobantesPDF: {$e->getMessage()}");
+                    return response()->json(['success' => false, 'message' => 'Error al generar el PDF: ' . $e->getMessage()], 500);
+                }
             }
 
-            // Si no es PDF, devolver JSON como estaba antes
-            return response()->json([
-                'success' => true,
-                'document_id' => $document->id,
-                'comprobantes' => $comprobantes,
-                'stats' => $stats,
-                'book' => [
-                    'title' => $document->book->title,
-                    'code' => $document->book->N_codigo,
-                    'year' => $document->book->year,
-                    'tomo' => $document->book->tomo
-                ]
-            ]);
+            return response()->json(['success' => true, 'comprobantes' => $comprobantes]);
 
         } catch (\Exception $e) {
-            Log::error('Error al obtener comprobantes: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al cargar los comprobantes: ' . $e->getMessage()
-            ], 500);
+            Log::error("Error en getComprobantes: {$e->getMessage()} en línea {$e->getLine()} del archivo {$e->getFile()}");
+            return response()->json(['success' => false, 'message' => 'Error al obtener comprobantes: ' . $e->getMessage()], 500);
         }
     }
 
-    public function returnComprobante(Document $document, Comprobante $comprobante)
+    /**
+     * Marca un comprobante específico como devuelto dentro de un préstamo.
+     */
+    public function returnComprobante(Request $request, Document $document, Comprobante $comprobante)
     {
-        DB::beginTransaction();
+        // Validar la observación de devolución (opcional)
+        $request->validate([
+            'observaciones_devolucion' => 'nullable|string|max:65535'
+        ]);
+
         try {
-            // Actualizar el estado del comprobante en la tabla pivot
+            DB::beginTransaction();
+
+            // Asegurarse de que el comprobante pertenece a este documento (préstamo)
+            $pivotData = $document->comprobantes()->where('comprobante_id', $comprobante->id)->first();
+
+            if (!$pivotData || $pivotData->pivot->estado === 'devuelto') {
+                DB::rollBack();
+                return response()->json(['success' => false, 'message' => 'Comprobante no encontrado en este préstamo o ya devuelto.'], 404);
+            }
+
+            // Actualizar la tabla pivote
             $document->comprobantes()->updateExistingPivot($comprobante->id, [
                 'estado' => 'devuelto',
-                'fecha_devolucion' => Carbon::now()->format('Y-m-d H:i:s')
+                'fecha_devolucion' => now(),
+                'observaciones_devolucion' => $request->input('observaciones_devolucion')
             ]);
 
-            // Activar el comprobante
+            // Actualizar el estado del comprobante a 'activo'
             $comprobante->update(['estado' => 'activo']);
 
-            // Verificar si todos los comprobantes han sido devueltos
-            $pendingComprobantes = $document->comprobantes()
-                                          ->wherePivot('estado', 'prestado')
-                                          ->count();
-
-            $allReturned = $pendingComprobantes === 0;
-
-            // Si todos están devueltos, actualizar el documento
-            if ($allReturned) {
-                $document->update([
-                    'status' => self::STATUS_DEVUELTO,
-                    'fecha_devolucion' => now()
-                ]);
+            // Opcional: Verificar si todos los comprobantes del préstamo han sido devueltos
+            // y actualizar el estado del documento principal si es necesario.
+            if ($document->comprobantesPrestados()->count() === 0) {
+                $document->update(['status' => 'Devuelto']);
+                // Si el libro fue prestado completo, cambiar su estado
+                if ($document->book->estado === Book::ESTADO_PRESTADO && $document->N_hojas !== null) { // Asumiendo que N_hojas indica préstamo completo
+                    $document->book->update(['estado' => Book::ESTADO_NO_PRESTADO]);
+                }
             }
 
             DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'allReturned' => $allReturned,
-                'pendingCount' => $pendingComprobantes,
-                'message' => 'Comprobante devuelto correctamente'
-            ]);
+            return response()->json(['success' => true, 'message' => 'Comprobante devuelto exitosamente.']);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error al devolver comprobante: ' . $e->getMessage());
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al devolver el comprobante: ' . $e->getMessage()
-            ], 500);
+            Log::error("Error al devolver comprobante: ID Documento {$document->id}, ID Comprobante {$comprobante->id} - Error: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Error al procesar la devolución.'], 500);
         }
     }
 
@@ -549,6 +563,7 @@ class DocumentController extends Controller
                     'N_carpeta' => $document->N_carpeta,
                     'N_hojas' => $document->N_hojas,
                     'descripcion' => $document->description ?? 'Sin descripción',
+                    'observacion_devolucion_general' => $document->observacion_devolucion_general ?? 'Sin observaciones',
                     'notas' => $document->notes ?? null,
                     'fecha_creacion' => $document->created_at ? $document->created_at->format('d/m/Y H:i:s') : 'No registrada'
                 ],
@@ -585,7 +600,7 @@ class DocumentController extends Controller
 
             // Cargar la vista PDF con manejo de errores
             try {
-                $pdf = Pdf::loadView('admin.documents.generalPDF', $data);
+                $pdf = DomPDF::loadView('admin.documents.generalPDF', $data);
 
                 // Generar el nombre del archivo
                 $filename = 'prestamo-general-' . $document->id . '-' . now()->format('dmY') . '.pdf';

@@ -112,35 +112,44 @@
                         <tr class="bg-gray-50 dark:bg-gray-800">
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">N° Comprobante</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Hojas</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Obs. Préstamo</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha Préstamo</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha Devolución</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Obs. Devolución</th>
                             <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                         @forelse($document->comprobantes as $comprobante)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" id="comprobante-row-{{ $comprobante->id }}">
                             <td class="px-4 py-3 whitespace-nowrap">
                                 <div class="text-sm font-medium text-gray-900 dark:text-gray-200">#{{ $comprobante->numero_comprobante }}</div>
                             </td>
                             <td class="px-4 py-3 whitespace-nowrap">
                                 <div class="text-sm text-gray-700 dark:text-gray-300">{{ $comprobante->n_hojas }}</div>
                             </td>
+                            <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 max-w-xs break-words whitespace-normal">
+                                {{ $comprobante->pivot->observaciones_prestamo ?: '-' }}
+                            </td>
                             <td class="px-4 py-3 whitespace-nowrap">
-                                <span class="{{ $comprobante->pivot->estado === 'prestado' ? 'text-red-500 dark:text-red-400' : 'text-green-500 dark:text-green-400' }} font-semibold">
+                                <span id="estado-comprobante-{{ $comprobante->id }}" class="{{ $comprobante->pivot->estado === 'prestado' ? 'text-red-500 dark:text-red-400' : 'text-green-500 dark:text-green-400' }} font-semibold">
                                     {{ ucfirst($comprobante->pivot->estado) }}
                                 </span>
                             </td>
                             <td class="px-4 py-3 whitespace-nowrap">
                                 {{ $comprobante->pivot->fecha_prestamo ? \Carbon\Carbon::parse($comprobante->pivot->fecha_prestamo)->format('d/m/Y H:i:s') : 'N/A' }}
                             </td>
-                            <td class="px-4 py-3 whitespace-nowrap">
+                            <td class="px-4 py-3 whitespace-nowrap" id="fecha-devolucion-{{ $comprobante->id }}">
                                 {{ $comprobante->pivot->fecha_devolucion ? \Carbon\Carbon::parse($comprobante->pivot->fecha_devolucion)->format('d/m/Y H:i:s') : 'N/A' }}
                             </td>
+                            <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 max-w-xs break-words whitespace-normal obs-devolucion-cell">
+                                {{ $comprobante->pivot->observaciones_devolucion ?: '-' }}
+                            </td>
                             <td class="px-4 py-3 whitespace-nowrap text-right">
-                                <div class="flex items-center justify-end gap-2">
+                                <div class="flex flex-col items-end space-y-2">
                                     @if($comprobante->pivot->estado === 'prestado')
+                                    <textarea id="obs_devolucion_{{ $comprobante->id }}" rows="2" class="w-full px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 focus:ring-blue-500 focus:border-blue-500" placeholder="Observación de devolución..."></textarea>
                                     <button
                                         type="button"
                                         class="return-comprobante inline-flex items-center px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-xs font-medium rounded-lg shadow-sm hover:shadow-md transition duration-300"
@@ -176,12 +185,12 @@
         <div class="p-4 flex flex-wrap gap-3 border-t border-gray-200 dark:border-gray-700">
             <a href="{{ route('document.loan.show', $document->id) }}"
                class="inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-gray-400/80 to-gray-600/80 hover:from-gray-500 hover:to-gray-700 text-white rounded-lg transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-1 shine-button">
-                <i class="fas fa-arrow-left mr-2"></i> Volver a Detalles
+                <i class="fas fa-arrow-left mr-2"></i> PDF y mas detalles
             </a>
 
             <a href="{{ route('document.loans.index') }}"
                class="inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-400/80 to-blue-600/80 hover:from-blue-500 hover:to-blue-700 text-white rounded-lg transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-1 shine-button">
-                <i class="fas fa-list mr-2"></i> Volver a Préstamos
+                <i class="fas fa-list mr-2"></i> Volver a lista
             </a>
 
             @if($estadisticas['prestados'] > 0 && $document->status !== 'Devuelto')
@@ -241,6 +250,7 @@ $(document).ready(function() {
         let btn = $(this);
         let loanId = btn.data('loan');
         let comprobanteId = btn.data('comprobante');
+        let observacionDevolucion = $('#obs_devolucion_' + comprobanteId).val();
 
         Swal.fire({
             title: '¿Devolver comprobante?',
@@ -259,14 +269,30 @@ $(document).ready(function() {
                 $.ajax({
                     url: `/document/${loanId}/comprobante/${comprobanteId}/return`,
                     type: 'PUT',
-                    data: { _token: '{{ csrf_token() }}' },
+                    data: {
+                        _token: '{{ csrf_token() }}',
+                        observaciones_devolucion: observacionDevolucion
+                    },
                     success: function(response) {
                         if (response.success) {
                             // Actualizar la fila en la tabla
                             let row = btn.closest('tr');
-                            row.find('.from-yellow-400').removeClass('from-yellow-400 to-yellow-600').addClass('from-green-400 to-green-600').text('Devuelto');
+                            row.find('#estado-comprobante-' + comprobanteId)
+                               .removeClass('text-red-500 dark:text-red-400')
+                               .addClass('text-green-500 dark:text-green-400')
+                               .text('Devuelto');
 
-                            // Eliminar botón de devolución
+                            // Mostrar fecha de devolución
+                            let ahora = new Date();
+                            let fechaFormateada = ahora.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                            let horaFormateada = ahora.toLocaleTimeString('es-ES');
+                            row.find('#fecha-devolucion-' + comprobanteId).text(`${fechaFormateada} ${horaFormateada}`);
+
+                            // Mostrar observación de devolución
+                            row.find('.obs-devolucion-cell').text(observacionDevolucion || '-');
+
+                            // Eliminar textarea y botón de devolución
+                            btn.closest('td').find('textarea').remove();
                             btn.remove();
 
                             Swal.fire({
@@ -277,7 +303,7 @@ $(document).ready(function() {
                                 showConfirmButton: false
                             });
 
-                            if (response.allReturned) {
+                            if (response.allReturned || $('.return-comprobante').length === 0) {
                                 Swal.fire({
                                     icon: 'success',
                                     title: '¡Completado!',
@@ -286,6 +312,7 @@ $(document).ready(function() {
                                 }).then(() => {
                                     location.reload();
                                 });
+                                $('.mark-as-returned').hide();
                             }
                         } else {
                             btn.prop('disabled', false)
@@ -298,14 +325,17 @@ $(document).ready(function() {
                             });
                         }
                     },
-                    error: function() {
+                    error: function(xhr) {
                         btn.prop('disabled', false)
                            .html('<i class="fas fa-check mr-1"></i> Devolver');
-
+                        let errorMsg = 'No se pudo conectar con el servidor.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMsg = xhr.responseJSON.message;
+                        }
                         Swal.fire({
                             icon: 'error',
                             title: 'Error',
-                            text: 'No se pudo conectar con el servidor'
+                            text: errorMsg
                         });
                     }
                 });

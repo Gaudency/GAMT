@@ -150,7 +150,7 @@
                                                 </a>
                                                 @if($document->status !== 'Devuelto')
                                                 @if(str_contains(strtolower($document->book->category->cat_title), 'comprobante'))
-                                                        <a href="{{ route('comprobantes.manage', $document->id) }}"
+                                                        <a href="{{ route('document.comprobantes.manage', $document->id) }}"
                                                             class="inline-flex items-center justify-center p-2 px-4 bg-gradient-to-r from-indigo-400/80 to-purple-500/80 hover:from-indigo-500 hover:to-purple-600 text-white rounded-lg transition-all duration-300 transform hover:-translate-y-1 shadow-md hover:shadow-lg text-sm shine-button"
                                                                 title="Gestionar comprobantes">
                                                         <i class="fas fa-tasks mr-2"></i> Gestionar
